@@ -2,7 +2,7 @@
 
 Tools, templates, and working notes for building your own SVG or APNG desktop pet.
 
-pet-forge is not a finished character pack. It is a reusable toolkit: route guides, prompt templates, SVG conventions, APNG post-processing scripts, and state-mapping notes.
+pet-forge can be used as a standalone toolkit or installed as a Codex skill. It is not a finished character pack; it is a reusable collection of route guides, prompt templates, SVG conventions, APNG post-processing scripts, examples, and state-mapping notes.
 
 ## Routes
 
@@ -25,6 +25,12 @@ reference image                     prompt template
 | Best for | crisp vector pets, tiny runtime files | rich visual styles, fast drafts |
 
 Choose SVG if you want precise loops, small files, and editable animation logic. Choose APNG if you want fast visual exploration and are comfortable with generation APIs and post-processing.
+
+## Using as a Codex Skill
+
+This repository includes `SKILL.md`, so Codex can use pet-forge as a skill when planning or building SVG/APNG desktop-pet assets. The skill points Codex toward the route docs, templates, tools, examples, and constraints in this repo instead of treating the task as a blank-page generation problem.
+
+Use it when you want Codex to help choose a route, convert a transparent PNG into SVG, prepare APNG generation prompts, post-process generated video into APNG, or wire a small runnable demo.
 
 ## Demo: GPT Pear SVG Route
 
