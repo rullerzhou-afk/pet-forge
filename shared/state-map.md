@@ -147,6 +147,40 @@ mini 入场链:
 **APNG 路线**：每个值是 `.apng` 路径
 **混合**：理论可行（部分 SVG 部分 APNG），但具体支持情况取决于你的运行时实现。
 
+### Scripted SVG 嵌入
+
+如果 SVG 状态内部带脚本（例如 pointer-look、host event、transition sequencing），不要默认用普通 `<img>` 嵌入。
+
+优先选：
+
+- `<object data="states/idle.svg" type="image/svg+xml">`
+- webview / iframe 风格的独立文档加载
+- 运行时直接加载 `.svg.html`
+
+普通 `<img>` 适合纯静态或纯 CSS/SMIL 资源；脚本状态通常需要独立文档上下文。
+
+### Mini mode 的 host 分工
+
+Mini 模式不是 main idle 的缩小版。运行时和状态文件要分工：
+
+- host / window 负责贴边、推出、收回、吸附、窗口位移；
+- mini SVG/APNG 负责角色在当前位置的表演；
+- 不要为了模拟 host 推出而让角色本体在 SVG 内整体乱跳；
+- hover peek 这类动作可以做成补充状态，但不要强行塞进核心 schema。
+
+这条能避免 mini 状态在不同运行时里位置漂移或重复位移。
+
+### 公开目标验证
+
+接入运行时或展示站后，验证对象必须是用户实际看到的目标：
+
+- 本地源文件只证明编辑结果；
+- runtime path 证明主题映射正确；
+- public demo 证明部署和引用正确；
+- preview URL 和 production URL 可能是不同快照。
+
+状态问题先分清是动画文件问题、映射问题、部署问题，还是缓存/旧预览问题。
+
 ---
 
 ## 最小可上线集合
@@ -225,3 +259,4 @@ JS 监听外部信号（WebSocket / polling）切换 iframe src。
 3. **过渡帧不在本表**：状态切换的过渡（如 idle → sleeping 的 falling-asleep）按需做，但不在 minimum 集合
 4. **状态间衔接看姿态**：所有结尾回到中性姿态的状态，互相切换才不突兀
 5. **不要为每个事件都做独立动画**：合理复用，比如 PreToolUse 和 PostToolUse 都用 typing 即可
+6. **先核真实目标再下结论**：状态是否交付、线上是否更新、运行时是否引用正确，都要看实际加载结果

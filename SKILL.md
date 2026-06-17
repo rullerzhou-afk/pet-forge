@@ -84,6 +84,7 @@ py -3.13 -m rembg i input.png input-clean.png
 - 推荐命令：`py -3.13 png2svg.py input-clean.png character.svg --preset apple-precise`
 - 检验输出 SVG 的 path 数量（< 50 个理想，> 200 个建议简化）
 - 明确提醒：PNG→SVG 只适合简单、低色数、边界干净的图形；照片、复杂插画、毛发、强渐变、纹理和噪点图会 path 爆炸或转坏，建议改走 APNG 或手工重画关键 SVG 结构
+- 把 AI 参考图当作 storyboard / 粗轮廓输入，不要把整图矢量化结果直接当交付母版；交付级 SVG 仍要整理图层、命名、锚点和可动画路径
 
 ### 第 3 步：套 preset + hello-idle 模板
 
@@ -92,12 +93,18 @@ py -3.13 -m rembg i input.png input-clean.png
 - 调 CSS 变量套 preset（apple-precise / pixel-art）
 - 浏览器双击打开看效果
 
+如果角色已有分层母版，优先从母版复制部件，不要从旧导出状态反向改回源文件。
+多状态角色开工前先读 `routes/svg/conventions/layered-master.md`，把母版、library、状态导出页分清。
+
 ### 第 4 步：磨制 idle 状态
 
 按 `routes/svg/conventions/iteration.md` 流程：
 - v1 起手 → 浏览器循环看 30s+ → 评审
 - 跑偏归档 _archive，开 v2
 - OK 就锁定，备份 + 写 spec
+- 涉及肢体、脸部边缘、尾巴、手脚等变形时，先读 `routes/svg/conventions/rig-first.md`
+- 用 tuner 调出的状态，锁定后按 `routes/svg/conventions/tuner-to-canonical.md` 烘焙到 canonical / showcase
+- 交付前按 `routes/svg/conventions/validation-runbook.md` 做结构、脚本、嵌入、循环和目标端验证
 
 ### 第 5 步：扩展状态
 
@@ -170,6 +177,10 @@ py -3.13 -m rembg i input.png input-clean.png
 | "为啥默认 SVG 不 Canvas" | routes/svg/conventions/svg-vs-canvas.md |
 | "为啥每状态一个 .svg.html 不拆" | routes/svg/conventions/single-file.md |
 | "怎么从 v1 改到 v2 / 锁定流程" | routes/svg/conventions/iteration.md |
+| "多状态角色母版怎么建" | routes/svg/conventions/layered-master.md |
+| "手脚/脸/尾巴怎么变形不崩" | routes/svg/conventions/rig-first.md |
+| "调参页怎么变成交付文件" | routes/svg/conventions/tuner-to-canonical.md |
+| "SVG 状态怎么验收" | routes/svg/conventions/validation-runbook.md |
 | "preset 是什么 / 怎么用" | routes/svg/presets/<preset>.md |
 | "PNG 怎么转 SVG" | routes/svg/tools/png2svg/README.md |
 | "AI 生成 prompt 怎么写" | routes/apng/conventions/workflow.md + routes/apng/prompts/template.js |
@@ -178,7 +189,7 @@ py -3.13 -m rembg i input.png input-clean.png
 
 ---
 
-## skill 应该提醒的 5 件事（顺其自然，不要每次说）
+## skill 应该提醒的 6 件事（顺其自然，不要每次说）
 
 按情况点出（不要全堆一次说）：
 
@@ -187,13 +198,14 @@ py -3.13 -m rembg i input.png input-clean.png
 3. **跑偏方向归档不删**：_archive/ 留追溯
 4. **浏览器循环看 30s+**：静帧好看 ≠ 循环好看
 5. **角色一致性是工程问题**：library/ 资产 (SVG) / CHARACTER_PREFIX (APNG) 钉死锚点
+6. **对外交付先核真实目标**：看 runtime / showcase / public asset 后再判断 bug、遗漏或新增 scope
 
 ---
 
 ## skill 不应该做的事
 
 - ❌ **不要替用户调生成 API**：API key 是用户的，付费是用户的，违规过滤是用户的
-- ❌ **不要直接帮用户写 SVG path**：让 AI 生 PNG 然后 png2svg 转，不要凭空写 path
+- ❌ **不要凭空写整只角色的 SVG path**：AI 生图 / 手绘 / png2svg 可以起稿，但交付级 SVG 要回到分层母版、可读路径和稳定锚点
 - ❌ **不要替用户决定审美**：preset 给档位，最终视觉用户拍板
 - ❌ **不要保证"一键生成完整多状态角色"**：先做 1 个 hero 状态磨到位，再扩展。
 - ❌ **不要把任何现有产品角色资产直接复制给用户**：除非对应资产明确允许复用。
@@ -215,7 +227,7 @@ skill 不是写完就完，是个**慢慢迭代的产品**。
 ## 版本
 
 - v0.1（2026-05-02 初版）：双路线骨架铺完，hello-idle 模板入库，APNG 路线工具完成迁移与基础入口修正
-- v0.2 计划：APNG 路线用真实 API key 跑通首个状态 + 加更多 preset
+- v0.2（2026-06-17）：补 SVG 分层母版、rig-first、tuner→canonical、验证 runbook、scripted SVG 嵌入、mini host 分工、APNG 绿幕/边缘质量经验
 - v0.3 计划：长出第三只完全不同形态的桌宠（橘猫 / 机器人）证明通用性
 
 当前进度详见 `CLAUDE.md` §当前进度。
