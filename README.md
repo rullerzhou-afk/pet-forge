@@ -62,68 +62,25 @@ flowchart TD
 
 例如：只有头的角色可能需要 face plane 和表情规则，但不需要脚部 rig；软团角色可能需要轮廓轴、悬浮锚点和 squash 规则，但没有嘴巴；完整吉祥物可能同时需要脸部、身体、附属结构和表情合同。
 
-## 演示：GPT 梨子 SVG 路线
+## 演示：同一张参考图，两条 SVG 路线
+
+用同一张参考图，对比 pet-forge 两种得到 SVG 的方式：工具路线（png2svg + vtracer 追踪），和直接交给 GPT-5.5 Pro 生成。
 
 <table>
   <tr>
-    <th align="center">1. 源 PNG</th>
-    <th align="center">png2svg + vtracer</th>
-    <th align="center">2. 生成的 SVG</th>
+    <th align="center" width="33%">参考图 · 源 PNG</th>
+    <th align="center" width="33%">工具路线 · <code>png2svg + vtracer</code></th>
+    <th align="center" width="34%">GPT-5.5 Pro · 直接生成</th>
   </tr>
   <tr>
-    <td align="center" width="35%">
-      <img src="examples/svg-gpt-pear/source.png" width="220" alt="GPT 梨子源 PNG">
-    </td>
-    <td align="center" width="30%">
-      <strong>PNG -> SVG</strong><br>
-      透明背景<br>
-      低色数量化<br>
-      位图转矢量追踪<br>
-      <code>--preset apple-precise</code>
-    </td>
-    <td align="center" width="35%">
-      <img src="examples/svg-gpt-pear/pear.svg" width="220" alt="GPT 梨子转换后的 SVG">
-    </td>
+    <td align="center"><img src="examples/svg-gpt-pear/source.png" width="220" alt="源参考 PNG"></td>
+    <td align="center"><img src="examples/svg-gpt-pear/pear.svg" width="220" alt="vtracer 追踪生成的 SVG"></td>
+    <td align="center"><img src="examples/svg-gpt-pear/pear-gpt-5.5-pro.svg" width="220" alt="GPT-5.5 Pro 直接编写的 SVG"></td>
   </tr>
   <tr>
-    <td align="center">原始位图。背景最好是真 alpha 透明，不要用棋盘格截图。</td>
-    <td align="center">工具会清理透明像素、限制颜色数量，再让 vtracer 追踪路径。</td>
-    <td align="center">矢量输出：13 条 path，约 21 KB。更容易动画和检查，但小细节会被简化。</td>
-  </tr>
-</table>
-
-主演示使用 GPT 生成的透明 PNG，经 vtracer 转成 SVG，再包进一个很小的 idle 动画：
-
-- 源 PNG：`examples/svg-gpt-pear/source.png`
-- 生成的 SVG：`examples/svg-gpt-pear/pear.svg`
-- 可运行 demo：`examples/svg-gpt-pear/idle.svg.html`
-
-复现转换：
-
-```powershell
-py -3.13 routes\svg\tools\png2svg\png2svg.py examples\svg-gpt-pear\source.png examples\svg-gpt-pear\pear.svg --preset apple-precise
-```
-
-这次运行会生成 13 条 SVG path，文件约 21 KB。关键是源图必须是真透明 PNG；带棋盘格背景的截图会把棋盘格也矢量化，输出会很差。
-
-`examples/svg-soft-orb/` 是一个更小的合成基准 demo，用来对比手工低色数源图和 GPT 生成源图。
-
-## 横向对比：工具路线 vs GPT-5.5 Pro 直接生成
-
-同一张参考图（上面的源 PNG），换一种生成方式，结果完全不同。左边是 SVG 工具路线用 vtracer 追踪出来的，右边是把同一张参考图直接交给 GPT-5.5 Pro 写出来的 SVG。
-
-<table>
-  <tr>
-    <th align="center" width="50%">工具路线 · <code>png2svg + vtracer</code></th>
-    <th align="center" width="50%">GPT-5.5 Pro · 直接生成 SVG</th>
-  </tr>
-  <tr>
-    <td align="center"><img src="examples/svg-gpt-pear/pear.svg" width="240" alt="vtracer 追踪生成的 SVG"></td>
-    <td align="center"><img src="examples/svg-gpt-pear/pear-gpt-5.5-pro.svg" width="240" alt="GPT-5.5 Pro 直接编写的 SVG"></td>
-  </tr>
-  <tr>
-    <td align="center">按颜色区域把位图追踪成矢量。轮廓还原得不错，但眼睛高光、笑嘴、舌头这些小细节被压扁或糊掉，path 也没有语义。</td>
-    <td align="center">模型直接重画一份结构化 SVG：渐变身体、干净的五官、命名图层。视觉更接近成品，但这是模型自己的诠释，不是逐像素还原。</td>
+    <td align="center">真 alpha 透明 PNG。不要用带棋盘格背景的截图，否则背景也会被矢量化。</td>
+    <td align="center">清理透明像素、限制颜色数后，vtracer 按颜色区域追踪路径。轮廓还原得不错，但眼睛高光、笑嘴、舌头被压扁，path 也没有语义。</td>
+    <td align="center">模型重画的结构化 SVG：渐变身体、干净的五官、命名图层。更接近成品，但是模型自己的诠释，不是逐像素还原。</td>
   </tr>
 </table>
 
@@ -138,16 +95,24 @@ py -3.13 routes\svg\tools\png2svg\png2svg.py examples\svg-gpt-pear\source.png ex
 | 保真度 | 轮廓接近源图，脸部细节有损 | 模型自己的诠释，非像素级还原 |
 | 无障碍 | 无 | 带 `title` / `desc`（ARIA） |
 
-两者不是替代关系：
+**有条件的话，建议优先用 GPT-5.5 Pro 这类前沿模型直接生成 SVG**：输出结构更干净、分好图层、可直接绑定动画。如果没有，工具路线（vtracer 追踪）是完全可用的替代方案，只是脸部等细节需要后续手工清理。两种产物都能复制进 `routes/svg/templates/hello-idle.svg.html` 里调 CSS 变量和动画。
 
-- 已经有满意的位图、想快速矢量化 -> 走 vtracer 追踪。
-- 想要一份干净、分好图层、能直接绑定动画的母版 -> 让前沿模型直接生成结构化 SVG，再接进模板。
+复现工具路线（从仓库根目录）：
 
-pet-forge 的 SVG 路线两种都能承接：工具追踪出的 path，和模型生成的结构化 SVG，都可以复制进 `routes/svg/templates/hello-idle.svg.html` 里调 CSS 变量和动画。
+```powershell
+py -3.13 routes\svg\tools\png2svg\png2svg.py examples\svg-gpt-pear\source.png examples\svg-gpt-pear\pear.svg --preset apple-precise
+```
 
-**有条件的话，建议优先用 GPT-5.5 Pro 这类前沿模型直接生成 SVG**：输出结构更干净、分好图层、可直接绑定动画。如果没有，工具路线（vtracer 追踪）是完全可用的替代方案，只是脸部等细节需要后续手工清理。
+这次运行生成 13 条 SVG path、约 21 KB。关键是源图必须是真透明 PNG；带棋盘格背景的截图会把棋盘格也矢量化，输出会很差。
 
-> `examples/svg-gpt-pear/pear-gpt-5.5-pro.svg` 保留了模型原样输出（含一个可删除的白色背景矩形，删掉即可得到透明背景）。
+可运行文件：
+
+- 参考图（源 PNG）：`examples/svg-gpt-pear/source.png`
+- 工具路线 SVG：`examples/svg-gpt-pear/pear.svg`
+- GPT-5.5 Pro SVG：`examples/svg-gpt-pear/pear-gpt-5.5-pro.svg`（GPT-5.5 Pro 直接生成，已去掉白底改为透明背景）
+- 可运行 idle demo：`examples/svg-gpt-pear/idle.svg.html`
+
+`examples/svg-soft-orb/` 是一个更小的合成基准 demo，用来对比手工低色数源图和 GPT 生成源图。
 
 ## 快速开始
 
