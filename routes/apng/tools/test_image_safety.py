@@ -24,6 +24,22 @@ def main():
     red = chroma_key.chroma_key_frame(Image.new("RGBA", (100, 100), (255, 0, 0, 255)))
     assert np.all(np.array(red)[:, :, 3] == 255), "chroma key erased non-green pixels"
 
+    # Regression: yellow / yellow-green pixels must survive chroma keying.
+    # The green_ratio > 0.45 heuristic used to catch any yellow pixel
+    # anywhere in the frame and crush its alpha to 30% — devastating for
+    # pets with beaks, eyes, stars, or yellow clothing.
+    for yellow_rgb in [(255, 220, 0), (200, 230, 50)]:
+        frame = np.full((40, 40, 4), (0, 177, 64, 255), dtype=np.uint8)
+        frame[10:30, 10:30] = (*yellow_rgb, 255)
+        keyed = chroma_key.chroma_key_frame(Image.fromarray(frame))
+        alpha = np.array(keyed)[15:25, 15:25, 3]
+        assert alpha.mean() == 255, (
+            f"chroma key crushed yellow {yellow_rgb} alpha to {alpha.mean():.0f}"
+        )
+
+    # Regression: probe_video_fps falls back to 24.0 for unreadable input.
+    assert chroma_key.probe_video_fps("/nonexistent/video.mp4") == 24.0
+
     gray_bleed = load_module("fix_gray_bleed")
     with tempfile.TemporaryDirectory() as temp_dir:
         temp = Path(temp_dir)
@@ -32,14 +48,30 @@ def main():
         Image.new("RGBA", (10, 10), (100, 100, 110, 255)).save(opaque)
         assert gray_bleed.fix_frame(str(opaque), opaque_fixed, 10, 192) == 0
 
-        edge = np.zeros((7, 7, 4), dtype=np.uint8)
-        edge[2:5, 2:5] = (100, 100, 110, 200)
-        edge[3, 3, 3] = 255
-        edge_path = temp / "edge.png"
-        edge_fixed = temp / "edge-fixed.png"
-        Image.fromarray(edge).save(edge_path)
-        assert gray_bleed.fix_frame(str(edge_path), edge_fixed, 7, 192) == 8
-        assert np.array(Image.open(edge_fixed).convert("RGBA"))[3, 3, 3] == 255
+        # Regression: a gray character's own anti-aliased edge must NOT be
+        # erased. Semi-transparent gray pixels adjacent to opaque gray pixels
+        # are the character's silhouette, not background bleed.
+        gray_char = np.zeros((7, 7, 4), dtype=np.uint8)
+        gray_char[2:5, 2:5] = (120, 120, 120, 255)     # opaque gray body
+        gray_char[2:5, 1] = (120, 120, 120, 200)        # semi-transparent edge
+        gray_char[2:5, 5] = (120, 120, 120, 200)
+        gc_path = temp / "gray-char.png"
+        gc_fixed = temp / "gray-char-fixed.png"
+        Image.fromarray(gray_char).save(gc_path)
+        erased = gray_bleed.fix_frame(str(gc_path), gc_fixed, 7, 192)
+        assert erased == 0, f"fix_gray_bleed erased {erased} pixels of a gray character's own edge"
+
+        # Positive case: actual gray bleed next to a NON-gray character must
+        # still be removed. Gray pixels adjacent to opaque red (not opaque
+        # gray) are bleed, not the character body.
+        bleed = np.zeros((7, 7, 4), dtype=np.uint8)
+        bleed[2:5, 2:5] = (200, 0, 0, 255)              # red body (opaque)
+        bleed[2:5, 1] = (100, 100, 110, 200)            # gray bleed at edge
+        bleed_path = temp / "bleed.png"
+        bleed_fixed = temp / "bleed-fixed.png"
+        Image.fromarray(bleed).save(bleed_path)
+        erased = gray_bleed.fix_frame(str(bleed_path), bleed_fixed, 7, 192)
+        assert erased > 0, "fix_gray_bleed failed to remove actual gray bleed next to a red body"
 
         frames = temp / "frames"
         frames.mkdir()

@@ -84,11 +84,22 @@ def chroma_key_frame(
     is_key_color = dist_to_key <= tolerance
     is_green = is_hsv_green | is_key_color
 
-    # Soft edge: pixels near green get partial transparency
-    # Calculate "greenness" score for anti-aliased edges
+    # Soft edge: pixels NEAR the green screen zone get partial transparency.
+    # The green_ratio > 0.45 heuristic is intentionally gated behind a
+    # proximity check — without it, any yellow / yellow-green pixel anywhere
+    # in the frame (beaks, eyes, stars, clothing) gets its alpha crushed to
+    # 30% even though it is nowhere near the key color.
     green_ratio = gf / (rf + gf + bf + 0.001)
     near_key_edge = dist_to_key <= max(tolerance * 1.8, tolerance + 35)
-    is_semi_green = ((green_ratio > 0.45) | near_key_edge) & (sat >= SAT_MIN * 0.5) & ~is_green
+    # Dilate is_green by 1px so the soft-edge only touches pixels adjacent to
+    # the actual green-screen region.
+    padded_green = np.pad(is_green, 1, constant_values=False)
+    near_green_zone = (
+        padded_green[:-2, :-2] | padded_green[:-2, 1:-1] | padded_green[:-2, 2:] |
+        padded_green[1:-1, :-2] | padded_green[1:-1, 2:] |
+        padded_green[2:, :-2] | padded_green[2:, 1:-1] | padded_green[2:, 2:]
+    )
+    is_semi_green = ((green_ratio > 0.45) | near_key_edge) & (sat >= SAT_MIN * 0.5) & ~is_green & near_green_zone
 
     # Apply
     new_a = a.copy()
@@ -115,6 +126,38 @@ def chroma_key_frame(
     arr[:,:,3] = np.array(alpha_ch)
 
     return Image.fromarray(arr)
+
+
+def probe_video_fps(video_path: str) -> float:
+    """Probe the input video's native frame rate via ffprobe.
+
+    Returns 24.0 (the historical assumption) as a fallback when ffprobe is
+    unavailable or the stream metadata is missing, so behaviour degrades
+    gracefully instead of crashing.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=r_frame_rate",
+                "-of", "csv=p=0",
+                video_path,
+            ],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            return 24.0
+        rate_str = result.stdout.strip()
+        if not rate_str:
+            return 24.0
+        if "/" in rate_str:
+            num, den = rate_str.split("/")
+            den_f = float(den)
+            return float(num) / den_f if den_f else 24.0
+        return float(rate_str)
+    except (Exception,):
+        return 24.0
 
 
 def parse_args():
@@ -157,10 +200,15 @@ def main():
             raise RuntimeError("no frames extracted from input video")
         print(f"      {len(raw_frames)} frames extracted")
 
-        # Step 2: Downsample to target FPS (assume most generation APIs return 24fps video)
-        step = max(1, round(24 / args.fps))
+        # Step 2: Downsample to target FPS.
+        # Probe the source video's native fps instead of assuming 24 — many
+        # generation APIs return 30 or 60 fps, and a wrong assumption makes
+        # the animation play at the wrong speed.
+        source_fps = probe_video_fps(input_video)
+        step = max(1, round(source_fps / args.fps))
         selected = raw_frames[::step]
-        print(f"[2/5] Downsampled {len(raw_frames)} -> {len(selected)} frames ({args.fps}fps)")
+        print(f"[2/5] Downsampled {len(raw_frames)} -> {len(selected)} frames "
+              f"(source {source_fps:.1f}fps -> target {args.fps}fps, step={step})")
 
         # Step 3: Chroma key + resize + quantize
         print(f"[3/5] Chroma keying + resize to {args.height}px + quantize to {args.max_colors} colors...")
