@@ -38,7 +38,8 @@ def fix_frame(frame_path: str, output_path: Path, height: int, max_colors: int) 
     brightness = cmax
 
     is_translucent = (a > 0) & (a < 255)
-    is_gray = (delta < 35) & (brightness > 60) & (brightness < 200) & is_translucent
+    is_gray_color = (delta < 35) & (brightness > 60) & (brightness < 200)
+    is_gray = is_gray_color & is_translucent
 
     # Only touch cool gray pixels directly beside transparency. Applying the
     # color heuristic to the whole frame destroys legitimate gray characters.
@@ -49,8 +50,18 @@ def fix_frame(frame_path: str, output_path: Path, height: int, max_colors: int) 
         padded[1:-1, :-2] | padded[1:-1, 2:] |
         padded[2:, :-2] | padded[2:, 1:-1] | padded[2:, 2:]
     )
+    # Guard: don't erase a gray pixel that sits next to an OPAQUE gray pixel
+    # of similar brightness — that is the character's own anti-aliased edge,
+    # not background bleed. Bleed is gray fuzz around a NON-gray character.
+    opaque_gray = is_gray_color & (a >= 255)
+    padded_og = np.pad(opaque_gray, 1, constant_values=False)
+    near_opaque_gray = (
+        padded_og[:-2, :-2] | padded_og[:-2, 1:-1] | padded_og[:-2, 2:] |
+        padded_og[1:-1, :-2] | padded_og[1:-1, 2:] |
+        padded_og[2:, :-2] | padded_og[2:, 1:-1] | padded_og[2:, 2:]
+    )
     warm_ratio = (r + 1) / (b + 1)
-    is_cool_gray = is_gray & (warm_ratio < 1.15) & near_transparent
+    is_cool_gray = is_gray & (warm_ratio < 1.15) & near_transparent & ~near_opaque_gray
 
     fixed_pixels = int(np.sum(is_cool_gray))
     if fixed_pixels:
