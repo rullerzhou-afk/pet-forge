@@ -63,6 +63,9 @@ node gen-images.js --prompt "<CHARACTER_PREFIX 的具体填好版本>" --output 
 
 ### 主参考图标准
 
+- 先按 [`doubao-video-output.md`](doubao-video-output.md) 选择整套动画统一使用的官方输出比例
+- 所有状态保持相同画布比例、人物尺度、中心轴和脚底线
+- 为悬浮、跳跃、衣袖、尾巴、兵器和特效预留完整运动空间
 - 角色面向**正面或微侧**（侧面太多导致后续状态侧面错位）
 - 标准坐姿 / 站姿（最中性，能转换到其他状态）
 - 眼睛**睁开**（闭眼参考图无法做 idle）
@@ -111,8 +114,13 @@ node gen-video.js \
   idle-dozing \
   --image reference/main-ref.png \
   --last-frame reference/main-ref.png \
+  --resolution 1080p \
+  --ratio 1:1 \
+  --camera-fixed \
   --api doubao
 ```
+
+`resolution` 是清晰度档位，实际像素还取决于 `ratio`。例如默认的 Seedance 1.5 Pro 在 1080p 下，`1:1` 输出 1440×1440，`3:4` 输出 1248×1664，`4:3` 输出 1664×1248。完整规格和图片居中裁剪规则见 [`doubao-video-output.md`](doubao-video-output.md)。
 
 ### 选择 API 和模型
 
