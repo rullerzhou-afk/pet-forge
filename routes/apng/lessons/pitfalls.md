@@ -68,7 +68,7 @@ AI 视频生成最常见 4 类翻车，每类都有专属 negative prompt：
 | 尾巴 / 触角爆炸性放大 | `DO NOT inflate or balloon the {tail/antenna/etc.}` |
 | 镜头平移 / 旋转 | `Camera stays completely still. DO NOT rotate or shift the camera angle.` |
 | 加人手 / 道具 | `NO hands, NO fingers, NO human body parts visible.` |
-| 背景出现物体 / 阴影 | `The background must remain a uniform solid green. No shadows, no objects, no gradients.` |
+| 背景出现物体 / 阴影 | `The background must remain a uniform solid key-color. No shadows, no objects, no gradients.` |
 
 **写在 prompt 末尾效果最好**（AI 对末尾指令敏感）。
 
@@ -112,16 +112,16 @@ mini 模式的语义是"在 dock / tray 角落不显眼"，姿态本身就该是
 
 ---
 
-### 8. 绿幕颜色全链路一致
+### 8. 色键颜色全链路一致
 
 **现象**：参考图绿幕是 `#00FF00`，prompt 写 `#00B140`，抠图工具默认 `#00B140`，结果绿边抠不干净。
 
-**正确做法**：开工前**定一个绿幕颜色**，全链路统一；如果生成视频的实际绿幕偏色，以输出视频里采样到的真实背景色为准：
-- 参考图：使用同一绿幕色
-- prompt：写同一绿幕色，并要求 uniform solid green
+**正确做法**：开工前**定一个色键颜色**，全链路统一；如果生成视频的实际背景偏色，以输出视频里采样到的真实背景色为准：
+- 参考图：使用同一色键
+- prompt：写同一颜色，并要求 uniform solid background
 - chroma_key 配置：用参考色或从视频采样出的真实色
 
-**推荐 `#00B140`**：比 `#00FF00` 不容易跟黄绿色花纹冲突。
+默认推荐 `#00B140`。角色本身含绿色时，改用与角色分离的颜色，例如 `#FF00FF`，并通过 `gen-video.js --key-color` 贯穿 prompt 与抠图。不要只改 `chroma_key.py` 的参数而让视频继续生成另一种背景色。
 
 ---
 
@@ -144,14 +144,14 @@ mini 模式的语义是"在 dock / tray 角落不显眼"，姿态本身就该是
 
 状态数越多，等待、重跑和人工检验成本会线性放大。先做 1 个 hero 状态，确认路线可行后再扩展。
 
-### 11. 绿幕 prompt 要禁止速度线和地面线索
+### 11. 色键 prompt 要禁止速度线和地面线索
 
 **现象**：角色动作不错，但背景出现速度线、投影、地面、烟尘或光效，抠图后留下脏边。
 
 **正确做法**：prompt 末尾显式写：
 
 ```text
-Uniform solid green background only. No shadows, no floor, no speed lines, no motion streaks, no particles, no props, no camera movement.
+Uniform solid key-color background only. No shadows, no floor, no speed lines, no motion streaks, no particles, no props, no camera movement.
 ```
 
 对走路、爬行、跳跃这类横向动作，优先让角色做 treadmill motion：肢体在动，但身体中心基本留在画面中央。真正的窗口位移交给 host。
@@ -170,7 +170,7 @@ Uniform solid green background only. No shadows, no floor, no speed lines, no mo
 
 预览和定稿分两档：
 
-- 快速预览：先用工具默认档，确认动作、构图、绿幕是否值得继续；
+- 快速预览：先用工具默认档，确认动作、构图、色键背景是否值得继续；
 - 定稿前：试一次更高质量档，例如 `--height 400 --max-colors 256 --fps 12`；
 - 如果体积过大，再按目标 runtime 的限制回调 height、fps 或 colors。
 
@@ -183,7 +183,7 @@ Uniform solid green background only. No shadows, no floor, no speed lines, no mo
 - ❌ **不写 CHARACTER_PREFIX 直接写动作 prompt**：每次生成长得不一样
 - ❌ **循环类不用尾帧锚定**：首尾姿态很容易对不齐
 - ❌ **失败视频强行 ffmpeg 修**：时间成本高于重跑
-- ❌ **绿幕颜色不统一**：抠图阶段必出问题
+- ❌ **色键颜色不统一**：抠图阶段必出问题
 - ❌ **Prompt 没 negative 段**：AI 翻车 4 大类必踩 1-2 个
 - ❌ **批量生成不带间隔**：限流 429 死循环
 - ❌ **Mini 状态当 main 的缩小版**：mini 应该是不同姿态

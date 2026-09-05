@@ -36,7 +36,7 @@
 // - 颜色 / 花纹（cream body with orange patches / metallic gray ...）
 // - 主要识别特征（big round eyes with white highlights / small triangle ears ...）
 // - 描边 / 渲染风格（thick dark outlines / cell-shaded / NO 3D rendering ...）
-// - 背景要求（plain solid green #00B140 background）
+// - 背景要求（与角色颜色分离的纯色色键；默认 #00B140）
 //
 export const CHARACTER_PREFIX = `[在这里写你的角色外观描述。例如：
 A cute chibi/kawaii style {物种} character with {描边特征}, {体型特征},
@@ -45,8 +45,22 @@ has {主体颜色}, {主要特征 1}, {主要特征 2}, {表情特征}. The art 
 is clean vector cartoon — NO pixel art, NO realistic rendering, NO 3D.
 Consistent character design throughout, no color changes between frames.]`;
 
-// ── 2. 绿幕背景强调（一般不用改） ────────────────────────────
-export const BG_SUFFIX = `The background must remain a uniform solid green (#00B140) throughout the entire video. No shadows, no objects, no gradients on the background.`;
+// ── 2. 色键背景强调（一般不用改） ────────────────────────────
+export const DEFAULT_KEY_COLOR = '#00B140';
+export const BG_SUFFIX = `The background must remain a uniform solid green (${DEFAULT_KEY_COLOR}) throughout the entire video. No shadows, no objects, no gradients on the background.`;
+
+export function normalizeKeyColor(value = DEFAULT_KEY_COLOR) {
+  if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) {
+    throw new Error('key color must use #RRGGBB format');
+  }
+  return value.toUpperCase();
+}
+
+export function buildBackgroundSuffix(keyColor = DEFAULT_KEY_COLOR) {
+  const normalized = normalizeKeyColor(keyColor);
+  if (normalized === DEFAULT_KEY_COLOR) return BG_SUFFIX;
+  return `The background must remain a uniform solid color (${normalized}) throughout the entire video. No shadows, no objects, no gradients on the background.`;
+}
 
 // ── 3. 完整状态库（25 个交付状态，按通用 state-mapping 分类） ────
 //
@@ -331,13 +345,19 @@ export const ANIMATIONS = {
 };
 
 // ── 4. 拼接函数（生成最终 prompt 给 API） ────────────────────
-export function buildFullPrompt(animationKey) {
+export function buildFullPrompt(animationKey, { keyColor = DEFAULT_KEY_COLOR } = {}) {
   const anim = ANIMATIONS[animationKey];
   if (!anim) {
     const keys = Object.keys(ANIMATIONS).join(', ');
     throw new Error(`未知动画: "${animationKey}"。可选: ${keys}`);
   }
-  return `${CHARACTER_PREFIX}\n\n${anim.prompt}\n\n${BG_SUFFIX}`;
+  const normalizedKeyColor = normalizeKeyColor(keyColor);
+  const characterPrefix = normalizedKeyColor === DEFAULT_KEY_COLOR
+    ? CHARACTER_PREFIX
+    : CHARACTER_PREFIX
+      .replaceAll(DEFAULT_KEY_COLOR, normalizedKeyColor)
+      .replaceAll('plain solid green', 'plain solid color');
+  return `${characterPrefix}\n\n${anim.prompt}\n\n${buildBackgroundSuffix(normalizedKeyColor)}`;
 }
 
 // ── 5. 列出所有动画（按首尾帧关系分组） ──────────────────────
@@ -365,7 +385,7 @@ export function listAnimations() {
 }
 
 // ── 6. 生成 gen-video.js 命令（按 anchor 类型自动选项） ─────
-export function buildGenVideoCommand(animationKey, refImagePaths) {
+export function buildGenVideoCommand(animationKey, refImagePaths, { keyColor } = {}) {
   const anim = ANIMATIONS[animationKey];
   if (!anim) throw new Error(`未知动画: ${animationKey}`);
 
@@ -388,6 +408,10 @@ export function buildGenVideoCommand(animationKey, refImagePaths) {
     const lastPath = refImagePaths[anim.lastKey];
     if (!lastPath) throw new Error(`lastKey "${anim.lastKey}" 没有对应路径`);
     parts.push(`--last-frame ${lastPath}`);
+  }
+
+  if (keyColor) {
+    parts.push(`--key-color "${normalizeKeyColor(keyColor)}"`);
   }
 
   parts.push(`--no-chroma`);

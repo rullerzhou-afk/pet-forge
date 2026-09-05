@@ -1,14 +1,14 @@
 # APNG 路线工具集
 
 > 来源：pet-forge 的公开 APNG 路线辅助工具。
-> 用途：用 AI 视频生成 + 绿幕抠图做出 APNG 桌宠动画。
+> 用途：用 AI 视频生成 + 纯色色键抠图做出 APNG 桌宠动画。
 
 ---
 
 ## 完整管线
 
 ```
-prompt 模板  →  AI 生参考图  →  AI 生视频(尾帧锚定)  →  绿幕抠图  →  APNG
+prompt 模板  →  AI 生参考图  →  AI 生视频(尾帧锚定)  →  色键抠图  →  APNG
    ↑              ↓              ↓                    ↓
 prompts/   gen-images.js  gen-video.js           chroma_key.py
                                                        ↓
@@ -113,15 +113,16 @@ node batch-gen.js --config animations.json
       "key": "idle-yawn",
       "image": "reference/main-ref.png",
       "lastFrame": "reference/main-ref.png",
-      "api": "doubao"
+      "api": "doubao",
+      "keyColor": "#FF00FF"
     }
   ]
 }
 ```
 
-### 第 4 步：绿幕抠图 → APNG
+### 第 4 步：色键抠图 → APNG
 
-视频用绿幕背景（`#00B140` 或 `#00FF00`）：
+默认视频使用绿幕背景 `#00B140`：
 
 ```powershell
 py chroma_key.py output/idle-yawn/doubao-video.mp4 output/idle-yawn/result.apng
@@ -129,12 +130,20 @@ py chroma_key.py output/idle-yawn/doubao-video.mp4 output/idle-yawn/result.apng
 
 支持参数：
 - `--plays 0` —— 0 = 无限循环, 1 = 单次播放（默认）
-- `--key-color "#00B140"` —— 绿幕颜色
+- `--key-color "#00B140"` —— 色键颜色，接受任意 `#RRGGBB`
 - `--tolerance 50` —— 颜色容差
+
+角色本身含绿色时，可以让生成 prompt 和自动后处理一起改用洋红：
+
+```powershell
+node gen-video.js thinking --image reference/main-ref.png --last-frame reference/main-ref.png --key-color "#FF00FF"
+```
+
+显式 `--key-color` 会同时更新视频背景要求，并传给 `chroma_key.py`。抠图只按指定颜色及其容差工作，不会继续额外删除绿色。
 
 ### 第 5 步：APNG 后处理（可选）
 
-如果绿边抠不干净：
+如果色键边缘抠不干净：
 
 ```powershell
 py fix_gray_bleed.py output/idle-yawn/frames output/idle-yawn/frames-fixed
@@ -166,7 +175,7 @@ py rebuild_apng.py output/idle-yawn/frames-fixed output/idle-yawn/result.apng --
 | `lib/api.js` | API 客户端封装（Doubao / Volcengine） |
 | `test-api.js` | API 连通性测试 |
 | `preview.html` | 本地预览页（拖入 APNG/视频/图片即看） |
-| `chroma_key.py` | 绿幕抠图 → APNG（`--plays 1` 单次, `--plays 0` 无限） |
+| `chroma_key.py` | 纯色色键抠图 → APNG（`--plays 1` 单次, `--plays 0` 无限） |
 | `check_dark.py` | 检查 PNG 帧目录是否有暗色泄漏 |
 | `fix_gray_bleed.py` | 只清理透明边缘相邻的半透明冷灰溢出，保留不透明角色灰色 |
 | `rebuild_apng.py` | 从 PNG 帧目录重建 APNG（修压缩/改帧率） |
@@ -185,9 +194,9 @@ py rebuild_apng.py output/idle-yawn/frames-fixed output/idle-yawn/result.apng --
 - prompt 里强调 "Seamless loop animation — the last frame connects perfectly back to the first frame"
 - 实在对不齐，用 ffmpeg 剪辑掉前 5-10 帧或后 5-10 帧再做 APNG
 
-### 绿边抠不干净
+### 色键边缘抠不干净
 
-- 检查视频背景颜色是否一致（用 `check_dark.py` 看）
+- 检查视频背景颜色是否一致，并从实际视频采样色键
 - 调 `chroma_key.py` 的 `--tolerance`（默认 50，可加到 70）
 - 实在不行，用 `fix_gray_bleed.py` 后处理
 
