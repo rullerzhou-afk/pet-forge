@@ -97,6 +97,20 @@ node gen-video.js idle-yawn --image reference/main-ref.png --last-frame referenc
 省略时，循环和回归型状态会自动复用 `--image`；过渡型状态必须显式提供不同的尾帧。
 自动后处理会读取状态的 `loop` 字段：循环状态生成无限播放 APNG，一次性状态只播放一遍。
 
+为避免服务端默认值变化，并防止参考图被中心裁剪，建议显式指定输出档位、比例和固定镜头：
+
+```powershell
+node gen-video.js idle-yawn `
+  --image reference/main-ref.png `
+  --last-frame reference/main-ref.png `
+  --resolution 1080p `
+  --ratio 1:1 `
+  --camera-fixed `
+  --api doubao
+```
+
+参考图、首帧、尾帧和视频应使用相同比例。豆包各比例的实际像素尺寸、输入图片限制与裁剪规则见 [`../conventions/doubao-video-output.md`](../conventions/doubao-video-output.md)。
+
 ### 第 3 步：批量生成（带限流）
 
 ```powershell
@@ -114,6 +128,9 @@ node batch-gen.js --config animations.json
       "image": "reference/main-ref.png",
       "lastFrame": "reference/main-ref.png",
       "api": "doubao",
+      "resolution": "1080p",
+      "ratio": "1:1",
+      "cameraFixed": true,
       "keyColor": "#FF00FF"
     }
   ]

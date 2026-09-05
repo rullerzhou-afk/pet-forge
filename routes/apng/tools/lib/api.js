@@ -99,11 +99,12 @@ export async function doubaoGenerateImage(prompt, opts = {}) {
  * @param {string} [opts.model] - Model name.
  * @param {string} [opts.lastFrameUrl] - Last-frame image URL or base64 data URI.
  * @param {boolean} [opts.asReference] - Use image as a reference instead of first-frame anchor.
+ * @param {string} [opts.resolution] - Output tier such as 720p or 1080p.
+ * @param {string} [opts.ratio] - Output ratio such as 1:1, 3:4, or adaptive.
+ * @param {boolean} [opts.cameraFixed] - Whether to keep the camera fixed.
  * @returns {Promise<object>} Completed task result.
  */
-export async function doubaoGenerateVideo(prompt, refImageUrl, opts = {}) {
-  checkKey('DOUBAO_API_KEY', DOUBAO_KEY);
-
+export function buildDoubaoVideoRequest(prompt, refImageUrl, opts = {}) {
   const content = [{ type: 'text', text: prompt }];
 
   if (refImageUrl) {
@@ -129,6 +130,18 @@ export async function doubaoGenerateVideo(prompt, refImageUrl, opts = {}) {
     // 默认带水印 → 这里默认 false,生成即无水印;传 { watermark: true } 可恢复。
     watermark: opts.watermark === true,
   };
+
+  if (opts.resolution) body.resolution = opts.resolution;
+  if (opts.ratio) body.ratio = opts.ratio;
+  if (typeof opts.cameraFixed === 'boolean') body.camera_fixed = opts.cameraFixed;
+
+  return body;
+}
+
+export async function doubaoGenerateVideo(prompt, refImageUrl, opts = {}) {
+  checkKey('DOUBAO_API_KEY', DOUBAO_KEY);
+
+  const body = buildDoubaoVideoRequest(prompt, refImageUrl, opts);
 
   const res = await fetch(`${DOUBAO_BASE}/contents/generations/tasks`, {
     method: 'POST',

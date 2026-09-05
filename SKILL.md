@@ -149,6 +149,8 @@ py -3.13 -m rembg i input.png input-clean.png
 ### 第 1 步：确定角色 + 准备主参考图
 
 引导用户：
+- 先读 `routes/apng/conventions/doubao-video-output.md`，按整套动画的最大横向和纵向运动范围选择一个官方输出比例
+- 在生图前固定画布比例、人物尺度、中心轴和脚底线；首帧、尾帧与视频保持相同比例
 - 写 CHARACTER_PREFIX（参考 `routes/apng/prompts/template.js` 模板）
 - 生 1 张主参考图（gen-images.js 或 ChatGPT 网页）
 - 检验：标准姿势 / 中性表情 / 与角色颜色不冲突的纯色色键（默认 #00B140）
@@ -169,7 +171,7 @@ py -3.13 -m rembg i input.png input-clean.png
 
 引导用户：
 - 改 prompt 模板的 ANIMATIONS 表，挑一个状态（推荐 `idle-dozing`）
-- 跑 `node gen-video.js idle-dozing --image <主参考图> --last-frame <主参考图> --api doubao`
+- 跑 `node gen-video.js idle-dozing --image <主参考图> --last-frame <主参考图> --resolution 1080p --ratio <已选比例> --camera-fixed --api doubao`
 - 看输出 mp4，检验 4 大翻车类型（变形 / 镜头 / 加手 / 背景）
 
 ### 第 4 步：抠图 → APNG
@@ -215,6 +217,7 @@ py -3.13 -m rembg i input.png input-clean.png
 | "preset 是什么 / 怎么用" | routes/svg/presets/<preset>.md |
 | "PNG 怎么转 SVG" | routes/svg/tools/png2svg/README.md |
 | "AI 生成 prompt 怎么写" | routes/apng/conventions/workflow.md + routes/apng/prompts/template.js |
+| "视频比例 / 分辨率 / 参考图尺寸 / 为什么被裁切" | routes/apng/conventions/doubao-video-output.md |
 | "AI 生视频常见翻车" | routes/apng/lessons/pitfalls.md |
 | "失败重跑 / API 限流" | routes/apng/lessons/pitfalls.md |
 

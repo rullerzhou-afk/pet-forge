@@ -30,6 +30,9 @@ if (args.length === 0) {
   console.log('  --last-frame <路径> 尾帧参考图片（循环/回归型通常同 --image）');
   console.log('  --api doubao        选择 API（当前公开版仅保留 doubao）');
   console.log('  --model <模型名>    覆盖默认视频模型');
+  console.log('  --resolution <档位> 输出档位：480p / 720p / 1080p / 4k');
+  console.log('  --ratio <比例>      输出比例：16:9 / 4:3 / 1:1 / 3:4 / 9:16 / 21:9 / adaptive');
+  console.log('  --camera-fixed      请求固定镜头（桌宠动画推荐）');
   console.log(`  --key-color <#RRGGBB> 视频背景和抠图颜色（默认 ${DEFAULT_KEY_COLOR}）`);
   console.log('  --ref-mode          图片作为角色参考，不锚定首帧');
   console.log('  --no-first-frame    不设首帧，只设尾帧');
@@ -60,13 +63,18 @@ const animKey = args[0];
 const imagePath = getArg('--image', null);
 const apiChoice = getArg('--api', 'doubao');
 const modelOpt = getArg('--model', null);
+const resolution = getArg('--resolution', null);
+const ratio = getArg('--ratio', null);
 const keyColorOpt = getArg('--key-color', null);
 const lastFramePath = getArg('--last-frame', null);
+const cameraFixed = args.includes('--camera-fixed') ? true : undefined;
 const refMode = args.includes('--ref-mode');
 const noFirstFrame = args.includes('--no-first-frame');
 const skipChroma = args.includes('--no-chroma');
 
-requireOptionValue('--key-color');
+for (const flag of ['--key-color', '--resolution', '--ratio']) {
+  requireOptionValue(flag);
+}
 
 let keyColor;
 try {
@@ -78,6 +86,17 @@ try {
 
 if (apiChoice !== 'doubao') {
   throw new Error('当前公开版仅保留 --api doubao');
+}
+
+const allowedResolutions = new Set(['480p', '720p', '1080p', '4k']);
+const allowedRatios = new Set(['16:9', '4:3', '1:1', '3:4', '9:16', '21:9', 'adaptive']);
+if (resolution && !allowedResolutions.has(resolution)) {
+  console.error(`❌ 不支持的 --resolution: ${resolution}`);
+  process.exit(1);
+}
+if (ratio && !allowedRatios.has(ratio)) {
+  console.error(`❌ 不支持的 --ratio: ${ratio}`);
+  process.exit(1);
 }
 
 if (!ANIMATIONS[animKey]) {
@@ -123,6 +142,9 @@ console.log(`\n🎬 生成视频: ${animKey} (${anim.name})`);
 console.log(`   首帧图片: ${imagePath || '(none)'}`);
 console.log('   API: doubao');
 console.log(`   色键: ${keyColor}`);
+if (resolution) console.log(`   输出档位: ${resolution}`);
+if (ratio) console.log(`   输出比例: ${ratio}`);
+if (cameraFixed) console.log('   镜头: 固定');
 console.log(`   输出目录: ${outDir}\n`);
 
 // ── Generate video ───────────────────────────────────────
@@ -155,6 +177,9 @@ try {
     model: modelOpt || undefined,
     lastFrameUrl: lastFrameUri,
     asReference: refMode,
+    resolution: resolution || undefined,
+    ratio: ratio || undefined,
+    cameraFixed,
   });
 
   let videoUrl = null;

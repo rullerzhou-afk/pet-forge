@@ -151,8 +151,10 @@ copy .env.example .env
 
 node test-api.js
 node gen-images.js --prompt "A cute chibi ..." --output reference/main-ref.png --api doubao
-node gen-video.js idle-dozing --image reference/main-ref.png --last-frame reference/main-ref.png --api doubao
+node gen-video.js idle-dozing --image reference/main-ref.png --last-frame reference/main-ref.png --resolution 1080p --ratio 1:1 --camera-fixed --api doubao
 ```
+
+生成参考图之前，先按 [`routes/apng/conventions/doubao-video-output.md`](routes/apng/conventions/doubao-video-output.md) 选择整套动画统一使用的比例；该文档记录了豆包各分辨率档位的实际像素、输入图片限制和居中裁剪规则。
 
 默认色键是绿色 `#00B140`。角色本身含绿色时，选一个与角色不冲突的颜色，并让视频 prompt 和自动后处理共用该值：
 

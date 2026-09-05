@@ -10,6 +10,7 @@ import {
   buildFullPrompt,
   buildGenVideoCommand,
 } from '../routes/apng/prompts/template.js';
+import { buildDoubaoVideoRequest } from '../routes/apng/tools/lib/api.js';
 import { buildChromaInvocation } from '../routes/apng/tools/lib/chroma-command.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -60,6 +61,41 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
+  buildDoubaoVideoRequest('stay still', 'data:image/png;base64,first', {
+    model: 'doubao-seedance-1-5-pro-251215',
+    lastFrameUrl: 'data:image/png;base64,last',
+    resolution: '1080p',
+    ratio: '1:1',
+    cameraFixed: true,
+  }),
+  {
+    model: 'doubao-seedance-1-5-pro-251215',
+    content: [
+      { type: 'text', text: 'stay still' },
+      {
+        type: 'image_url',
+        image_url: { url: 'data:image/png;base64,first' },
+        role: 'first_frame',
+      },
+      {
+        type: 'image_url',
+        image_url: { url: 'data:image/png;base64,last' },
+        role: 'last_frame',
+      },
+    ],
+    watermark: false,
+    resolution: '1080p',
+    ratio: '1:1',
+    camera_fixed: true,
+  },
+);
+
+const implicitVideoRequest = buildDoubaoVideoRequest('idle', null);
+assert.equal(implicitVideoRequest.resolution, undefined);
+assert.equal(implicitVideoRequest.ratio, undefined);
+assert.equal(implicitVideoRequest.camera_fixed, undefined);
+
+assert.deepEqual(
   buildChromaInvocation({
     platform: 'darwin',
     scriptPath: 'chroma_key.py',
@@ -98,6 +134,8 @@ expectExit(['gen-video.js'], 0);
 expectExit(['gen-images.js', '--list'], 0);
 expectExit(['test-api.js'], 1);
 expectExit(['gen-video.js', 'idle-dozing', '--no-first-frame', '--no-chroma'], 1, /必须同时提供 --last-frame/);
+expectExit(['gen-video.js', 'idle-dozing', '--resolution', '900p', '--no-chroma'], 1, /不支持的 --resolution/);
+expectExit(['gen-video.js', 'idle-dozing', '--ratio', '2:3', '--no-chroma'], 1, /不支持的 --ratio/);
 expectExit(
   ['gen-video.js', 'idle-dozing', '--image', sampleImage, '--key-color', 'FF00FF', '--no-chroma'],
   1,
