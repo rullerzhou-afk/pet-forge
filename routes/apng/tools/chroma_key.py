@@ -1,4 +1,4 @@
-"""Chroma key (green screen removal) for APNG animation pipelines.
+"""Solid-color chroma key removal for APNG animation pipelines.
 
 Usage:
   python chroma_key.py <input_video> [output_apng] [--plays 0]
@@ -23,12 +23,6 @@ MAX_COLORS = 192
 PLAYS = 1          # 1 = play once, 0 = loop forever
 DEFAULT_KEY_RGB = (0, 177, 64)
 
-# Green screen HSV range (tuned for #00B140 ± tolerance)
-HUE_MIN, HUE_MAX = 80, 160       # green hue range on a 0-360 scale
-SAT_MIN = 40                      # minimum saturation to count as "green"
-BRIGHT_MIN = 30                   # minimum brightness
-
-
 def parse_key_color(value: str) -> tuple[int, int, int]:
     raw = value.strip()
     if raw.startswith("#"):
@@ -50,63 +44,42 @@ def chroma_key_frame(
     arr = np.array(img.convert('RGBA'))
     r, g, b, a = arr[:,:,0], arr[:,:,1], arr[:,:,2], arr[:,:,3]
 
-    # Convert to float HSV manually (avoid opencv dependency)
-    rf, gf, bf = r / 255.0, g / 255.0, b / 255.0
-    cmax = np.maximum(rf, np.maximum(gf, bf))
-    cmin = np.minimum(rf, np.minimum(gf, bf))
-    delta = cmax - cmin
-
-    # Hue (0-360)
-    hue = np.zeros_like(rf)
-    mask_r = (cmax == rf) & (delta > 0)
-    mask_g = (cmax == gf) & (delta > 0)
-    mask_b = (cmax == bf) & (delta > 0)
-    hue[mask_r] = 60 * (((gf[mask_r] - bf[mask_r]) / delta[mask_r]) % 6)
-    hue[mask_g] = 60 * (((bf[mask_g] - rf[mask_g]) / delta[mask_g]) + 2)
-    hue[mask_b] = 60 * (((rf[mask_b] - gf[mask_b]) / delta[mask_b]) + 4)
-
-    # Saturation (0-100)
-    sat = np.zeros_like(cmax)
-    np.divide(delta, cmax, out=sat, where=cmax > 0)
-    sat *= 100
-
-    # Value/Brightness (0-100)
-    val = cmax * 100
-
-    # Green mask: pixels that are green enough by hue, or close to the requested key color.
+    # Measure only distance from the requested key. The previous implementation
+    # always ORed in a broad green-hue mask and always despilled green, so using
+    # --key-color with magenta still erased legitimate green subjects.
     key_r, key_g, key_b = [float(c) for c in key_rgb]
     dist_to_key = np.sqrt(
         (r.astype(float) - key_r) ** 2 +
         (g.astype(float) - key_g) ** 2 +
         (b.astype(float) - key_b) ** 2
     )
-    is_hsv_green = (hue >= HUE_MIN) & (hue <= HUE_MAX) & (sat >= SAT_MIN) & (val >= BRIGHT_MIN)
     is_key_color = dist_to_key <= tolerance
-    is_green = is_hsv_green | is_key_color
 
-    # Soft edge: pixels near green get partial transparency
-    # Calculate "greenness" score for anti-aliased edges
-    green_ratio = gf / (rf + gf + bf + 0.001)
-    near_key_edge = dist_to_key <= max(tolerance * 1.8, tolerance + 35)
-    is_semi_green = ((green_ratio > 0.45) | near_key_edge) & (sat >= SAT_MIN * 0.5) & ~is_green
+    # Fade pixels between the hard tolerance and a wider edge tolerance. This
+    # handles compression and antialiasing around any requested key color.
+    edge_tolerance = max(tolerance * 1.8, tolerance + 35)
+    is_key_edge = (dist_to_key > tolerance) & (dist_to_key <= edge_tolerance)
+    edge_span = max(edge_tolerance - tolerance, 1.0)
+    edge_coverage = np.clip((dist_to_key - tolerance) / edge_span, 0.0, 1.0)
 
     # Apply
     new_a = a.copy()
-    new_a[is_green] = 0
-    new_a[is_semi_green] = (new_a[is_semi_green] * 0.3).astype(np.uint8)
+    new_a[is_key_color] = 0
+    new_a[is_key_edge] = (
+        new_a[is_key_edge].astype(float) * edge_coverage[is_key_edge]
+    ).astype(np.uint8)
 
-    # Despill: remove green tint from ALL surviving pixels
-    # Any pixel where green dominates more than it should gets corrected
-    surviving = new_a > 0
-    if np.any(surviving):
-        rs, gs, bs = r[surviving].astype(float), g[surviving].astype(float), b[surviving].astype(float)
-        avg_rb = (rs + bs) / 2
-        # If green exceeds the average of R and B, cap it
-        too_green = gs > avg_rb
-        if np.any(too_green):
-            corrected_g = gs.copy()
-            corrected_g[too_green] = avg_rb[too_green] * 0.85 + gs[too_green] * 0.15
-            arr[:,:,1][surviving] = np.clip(corrected_g, 0, 255).astype(np.uint8)
+    # Remove key-color spill from partially transparent edge pixels. Assuming
+    # observed = coverage * foreground + (1 - coverage) * key, solve for the
+    # foreground color. Restrict this to the edge band so opaque subject colors
+    # remain byte-for-byte unchanged.
+    recoverable_edge = is_key_edge & (edge_coverage > 0.05)
+    if np.any(recoverable_edge):
+        coverage = edge_coverage[recoverable_edge]
+        observed = arr[:, :, :3][recoverable_edge].astype(float)
+        key = np.array(key_rgb, dtype=float)
+        recovered = (observed - (1.0 - coverage[:, None]) * key) / coverage[:, None]
+        arr[:, :, :3][recoverable_edge] = np.clip(recovered, 0, 255).astype(np.uint8)
 
     # Also erode alpha edges by 1px to remove any remaining fringe
     from PIL import ImageFilter

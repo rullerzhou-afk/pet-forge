@@ -12,7 +12,7 @@ pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用
 参考图                               prompt 模板
    -> 去背景                            -> AI 参考图
    -> PNG 转 SVG                        -> 首尾帧锚定的 AI 视频
-   -> preset + SVG 模板                 -> 绿幕抠图
+   -> preset + SVG 模板                 -> 纯色色键抠图
    -> 自包含 .svg.html                  -> .apng
 ```
 
@@ -154,10 +154,16 @@ node gen-images.js --prompt "A cute chibi ..." --output reference/main-ref.png -
 node gen-video.js idle-dozing --image reference/main-ref.png --last-frame reference/main-ref.png --api doubao
 ```
 
-如果需要手动重跑绿幕抠图：
+默认色键是绿色 `#00B140`。角色本身含绿色时，选一个与角色不冲突的颜色，并让视频 prompt 和自动后处理共用该值：
 
 ```powershell
-py chroma_key.py output/idle-dozing/doubao-video.mp4 output/idle-dozing/result.apng --plays 0
+node gen-video.js thinking --image reference/main-ref.png --last-frame reference/main-ref.png --api doubao --key-color "#FF00FF"
+```
+
+如果需要手动重跑色键抠图：
+
+```powershell
+py chroma_key.py output/thinking/doubao-video.mp4 output/thinking/result.apng --plays 0 --key-color "#FF00FF"
 ```
 
 ## 仓库结构

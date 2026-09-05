@@ -9,9 +9,11 @@ export function buildChromaInvocation({
   videoPath,
   apngPath,
   loop,
+  keyColor,
 }) {
   const plays = loop ? '0' : '1';
   const args = [scriptPath, videoPath, apngPath, '--plays', plays];
+  if (keyColor) args.push('--key-color', keyColor);
 
   if (platform === 'win32') {
     return {

@@ -35,7 +35,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function usage(exitCode = 0) {
   console.log('Usage: node batch-gen.js --config <batch.json> [--only <animation-key>]');
   console.log('');
-  console.log('Each job accepts: key, image, lastFrame, api, model, refMode, noFirstFrame, noChroma, extraArgs.');
+  console.log('Each job accepts: key, image, lastFrame, api, model, keyColor, refMode, noFirstFrame, noChroma, extraArgs.');
   console.log('The public example API value is currently doubao.');
   process.exit(exitCode);
 }
@@ -88,6 +88,7 @@ function buildCommand(job, index, baseDir) {
   if (lastFrame) cmdArgs.push('--last-frame', lastFrame);
   if (job.api) cmdArgs.push('--api', job.api);
   if (job.model) cmdArgs.push('--model', job.model);
+  if (job.keyColor) cmdArgs.push('--key-color', job.keyColor);
   if (job.refMode) cmdArgs.push('--ref-mode');
   if (job.noFirstFrame) cmdArgs.push('--no-first-frame');
   if (job.noChroma || job.chroma === false) cmdArgs.push('--no-chroma');

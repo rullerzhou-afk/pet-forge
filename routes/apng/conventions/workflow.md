@@ -17,12 +17,12 @@
    │  CHARACTER_PREFIX + 动作描述 + BG_SUFFIX
    ▼
 [3. 生视频]
-   │  gen-video.js (--last-frame 锚定) → mp4 (绿幕背景)
+   │  gen-video.js (--last-frame 锚定) → mp4 (纯色色键背景)
    ▼
 [4. 检查 + 重生]
    │  循环节奏 OK ? 动作 OK ? 翻车就重跑
    ▼
-[5. 绿幕抠图 → APNG]
+[5. 色键抠图 → APNG]
    │  chroma_key.py
    ▼
 [6. APNG 后处理（可选）]
@@ -67,7 +67,7 @@ node gen-images.js --prompt "<CHARACTER_PREFIX 的具体填好版本>" --output 
 - 标准坐姿 / 站姿（最中性，能转换到其他状态）
 - 眼睛**睁开**（闭眼参考图无法做 idle）
 - 表情**中性**（笑/哭/惊讶都不适合做主参考）
-- 背景**纯绿幕** `#00B140` 或 `#00FF00`
+- 背景使用与角色颜色不冲突的**纯色色键**；默认是绿色 `#00B140`
 
 ---
 
@@ -78,7 +78,7 @@ node gen-images.js --prompt "<CHARACTER_PREFIX 的具体填好版本>" --output 
 ```
 [CHARACTER_PREFIX] —— 角色外观（所有状态共享）
 [动作描述]         —— 这个状态做什么
-[BG_SUFFIX]       —— 背景要求（绿幕保持纯色）
+[BG_SUFFIX]       —— 背景要求（色键保持纯色）
 ```
 
 ### 动作描述写法
@@ -137,7 +137,7 @@ node gen-video.js \
 
 - [ ] 角色形态跟参考图一致
 - [ ] 动作描述被正确执行
-- [ ] 背景全程纯绿幕（无阴影、无遮挡）
+- [ ] 背景全程保持选定的纯色色键（无阴影、无遮挡）
 - [ ] 循环类：首尾帧位置 + 形态对齐（容差 ±5px）
 - [ ] 一次性类：结尾回到中性姿态
 
@@ -148,13 +148,13 @@ node gen-video.js \
 | 角色变形 / 不像参考图 | 重跑，加强 CHARACTER_PREFIX |
 | 尾巴 / 触角 / 耳朵爆炸放大 | prompt 加 "DO NOT inflate" negative |
 | 镜头平移 / 旋转 | prompt 加 "Camera stays still" |
-| 背景出现物体 / 阴影 | prompt 加 "Background must remain pure green" |
+| 背景出现物体 / 阴影 | prompt 加 "Background must remain a uniform solid key-color" |
 | 首尾帧错位 | `--last-frame` 锚定，prompt 强调 "Seamless loop" |
 | 帧数过少 / 跳帧 | 调长 duration 或换更稳定的可用模型 |
 
 ---
 
-## 第 5 步：绿幕抠图 → APNG
+## 第 5 步：色键抠图 → APNG
 
 ```powershell
 py chroma_key.py output/idle/raw.mp4 output/idle/result.apng --plays 0
@@ -162,9 +162,9 @@ py chroma_key.py output/idle/raw.mp4 output/idle/result.apng --plays 0
 
 `--plays 0` = 无限循环，`--plays 1` = 单次播放（默认）。
 
-### 绿幕颜色一致性
+### 色键颜色一致性
 
-视频生成时 prompt 指定 `#00B140`，但 AI 生出来可能略有偏差（`#00B042` / `#00B23E`...）。`chroma_key.py` 默认 tolerance=50 能容忍这种偏差。极端情况调到 70。
+默认 prompt 指定 `#00B140`，但 AI 生出来可能略有偏差（`#00B042` / `#00B23E`...）。`chroma_key.py` 默认 tolerance=50 能容忍这种偏差。角色本身含绿色时，应在 `gen-video.js` 传入另一个 `--key-color`；该值会同时用于 prompt 和自动后处理。极端情况可以在采样实际背景后调高 tolerance。
 
 ---
 
@@ -212,7 +212,7 @@ py chroma_key.py output/idle/raw.mp4 output/idle/result.apng --plays 0
 1. **角色一致性 > prompt 详细度**：CHARACTER_PREFIX 写好一次，所有状态都受益
 2. **循环靠 `--last-frame`**：尾帧锚定是 APNG 路线的关键能力
 3. **失败重跑是常态**：不要试图"修"失败的视频，直接重跑
-4. **绿幕颜色统一**：参考图、prompt、抠图工具用同一个绿色（#00B140 推荐）
+4. **色键颜色统一**：参考图、prompt、抠图工具使用同一个、且不与角色冲突的颜色
 5. **批量生成带间隔**：`batch-gen.js` 的 60s 间隔不是冗余，是必须
 6. **prompt 最后强调一次起止姿态**：放在 prompt 最后效果最好
 7. **mini 状态另写 prompt**：mini-idle 不是 idle 的缩小版，是不同姿态

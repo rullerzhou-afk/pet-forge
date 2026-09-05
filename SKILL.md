@@ -151,7 +151,7 @@ py -3.13 -m rembg i input.png input-clean.png
 引导用户：
 - 写 CHARACTER_PREFIX（参考 `routes/apng/prompts/template.js` 模板）
 - 生 1 张主参考图（gen-images.js 或 ChatGPT 网页）
-- 检验：标准姿势 / 中性表情 / 纯绿幕 #00B140
+- 检验：标准姿势 / 中性表情 / 与角色颜色不冲突的纯色色键（默认 #00B140）
 
 ### 第 2 步：环境配置
 

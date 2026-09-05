@@ -21,8 +21,37 @@ def load_module(name):
 
 def main():
     chroma_key = load_module("chroma_key")
+    default_green = chroma_key.chroma_key_frame(
+        Image.new("RGBA", (100, 100), (*chroma_key.DEFAULT_KEY_RGB, 255))
+    )
+    assert np.all(np.array(default_green)[:, :, 3] == 0), "default green key was not removed"
+
     red = chroma_key.chroma_key_frame(Image.new("RGBA", (100, 100), (255, 0, 0, 255)))
-    assert np.all(np.array(red)[:, :, 3] == 255), "chroma key erased non-green pixels"
+    assert np.all(np.array(red)[:, :, 3] == 255), "chroma key erased non-key pixels"
+
+    magenta_key = (255, 0, 255)
+    magenta = chroma_key.chroma_key_frame(
+        Image.new("RGBA", (100, 100), (*magenta_key, 255)),
+        key_rgb=magenta_key,
+    )
+    assert np.all(np.array(magenta)[:, :, 3] == 0), "custom magenta key was not removed"
+
+    teal_rgb = (16, 163, 127)
+    teal = chroma_key.chroma_key_frame(
+        Image.new("RGBA", (100, 100), (*teal_rgb, 255)),
+        key_rgb=magenta_key,
+    )
+    teal_pixels = np.array(teal)
+    assert np.all(teal_pixels[:, :, 3] == 255), "magenta key erased a green subject"
+    assert np.all(teal_pixels[:, :, :3] == teal_rgb), "magenta despill changed a green subject"
+
+    soft_magenta = chroma_key.chroma_key_frame(
+        Image.new("RGBA", (100, 100), (255, 70, 255, 255)),
+        key_rgb=magenta_key,
+        tolerance=50,
+    )
+    soft_alpha = np.array(soft_magenta)[:, :, 3]
+    assert np.all((soft_alpha > 0) & (soft_alpha < 255)), "custom key edge did not get soft alpha"
 
     gray_bleed = load_module("fix_gray_bleed")
     with tempfile.TemporaryDirectory() as temp_dir:

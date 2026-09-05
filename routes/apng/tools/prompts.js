@@ -7,7 +7,10 @@
 
 export {
   CHARACTER_PREFIX,
+  DEFAULT_KEY_COLOR,
   BG_SUFFIX,
+  normalizeKeyColor,
+  buildBackgroundSuffix,
   ANIMATIONS,
   listAnimations,
   buildGenVideoCommand,

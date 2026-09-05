@@ -15,7 +15,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { doubaoGenerateVideo, downloadBuffer } from './lib/api.js';
 import { buildChromaInvocation } from './lib/chroma-command.js';
-import { ANIMATIONS, buildPrompt } from './prompts.js';
+import { ANIMATIONS, buildPrompt, DEFAULT_KEY_COLOR, normalizeKeyColor } from './prompts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,6 +30,7 @@ if (args.length === 0) {
   console.log('  --last-frame <路径> 尾帧参考图片（循环/回归型通常同 --image）');
   console.log('  --api doubao        选择 API（当前公开版仅保留 doubao）');
   console.log('  --model <模型名>    覆盖默认视频模型');
+  console.log(`  --key-color <#RRGGBB> 视频背景和抠图颜色（默认 ${DEFAULT_KEY_COLOR}）`);
   console.log('  --ref-mode          图片作为角色参考，不锚定首帧');
   console.log('  --no-first-frame    不设首帧，只设尾帧');
   console.log('  --no-chroma         跳过 chroma_key 后处理');
@@ -39,6 +40,14 @@ if (args.length === 0) {
 function getArg(flag, defaultVal) {
   const idx = args.indexOf(flag);
   return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : defaultVal;
+}
+
+function requireOptionValue(flag) {
+  const idx = args.indexOf(flag);
+  if (idx >= 0 && (idx + 1 >= args.length || args[idx + 1].startsWith('--'))) {
+    console.error(`❌ ${flag} 缺少参数值`);
+    process.exit(1);
+  }
 }
 
 function imageDataUri(filePath) {
@@ -51,10 +60,21 @@ const animKey = args[0];
 const imagePath = getArg('--image', null);
 const apiChoice = getArg('--api', 'doubao');
 const modelOpt = getArg('--model', null);
+const keyColorOpt = getArg('--key-color', null);
 const lastFramePath = getArg('--last-frame', null);
 const refMode = args.includes('--ref-mode');
 const noFirstFrame = args.includes('--no-first-frame');
 const skipChroma = args.includes('--no-chroma');
+
+requireOptionValue('--key-color');
+
+let keyColor;
+try {
+  keyColor = normalizeKeyColor(keyColorOpt || DEFAULT_KEY_COLOR);
+} catch (err) {
+  console.error(`❌ ${err.message}`);
+  process.exit(1);
+}
 
 if (apiChoice !== 'doubao') {
   throw new Error('当前公开版仅保留 --api doubao');
@@ -93,7 +113,7 @@ if (refMode && noFirstFrame) {
   process.exit(1);
 }
 
-const prompt = buildPrompt(animKey);
+const prompt = buildPrompt(animKey, { keyColor });
 
 // ── Output setup ─────────────────────────────────────────
 
@@ -102,6 +122,7 @@ const outDir = path.join(__dirname, 'output', animKey);
 console.log(`\n🎬 生成视频: ${animKey} (${anim.name})`);
 console.log(`   首帧图片: ${imagePath || '(none)'}`);
 console.log('   API: doubao');
+console.log(`   色键: ${keyColor}`);
 console.log(`   输出目录: ${outDir}\n`);
 
 // ── Generate video ───────────────────────────────────────
@@ -188,6 +209,7 @@ if (!skipChroma && results.length > 0) {
           videoPath,
           apngPath,
           loop: anim.loop,
+          keyColor,
         });
         const processed = spawnSync(invocation.command, invocation.args, {
           stdio: 'inherit',

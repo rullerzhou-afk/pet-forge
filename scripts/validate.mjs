@@ -5,7 +5,11 @@ import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { ANIMATIONS, buildGenVideoCommand } from '../routes/apng/prompts/template.js';
+import {
+  ANIMATIONS,
+  buildFullPrompt,
+  buildGenVideoCommand,
+} from '../routes/apng/prompts/template.js';
 import { buildChromaInvocation } from '../routes/apng/tools/lib/chroma-command.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,6 +59,33 @@ assert.deepEqual(
   },
 );
 
+assert.deepEqual(
+  buildChromaInvocation({
+    platform: 'darwin',
+    scriptPath: 'chroma_key.py',
+    videoPath: 'input.mp4',
+    apngPath: 'output.apng',
+    loop: true,
+    keyColor: '#FF00FF',
+  }),
+  {
+    command: 'python3',
+    args: [
+      'chroma_key.py', 'input.mp4', 'output.apng', '--plays', '0',
+      '--key-color', '#FF00FF',
+    ],
+  },
+);
+
+const magentaPrompt = buildFullPrompt('thinking', { keyColor: '#ff00ff' });
+assert.ok(magentaPrompt.includes('#FF00FF'));
+assert.ok(!magentaPrompt.includes('#00B140'));
+assert.doesNotMatch(magentaPrompt, /solid green/i);
+assert.match(
+  buildGenVideoCommand('thinking', refs, { keyColor: '#ff00ff' }),
+  /--key-color "#FF00FF"/,
+);
+
 const cleanEnv = { ...process.env, DOUBAO_API_KEY: '', DOUBAO_BASE_URL: '' };
 function expectExit(args, expected, outputPattern) {
   const result = spawnSync(process.execPath, args, { cwd: tools, env: cleanEnv, encoding: 'utf8' });
@@ -67,6 +98,16 @@ expectExit(['gen-video.js'], 0);
 expectExit(['gen-images.js', '--list'], 0);
 expectExit(['test-api.js'], 1);
 expectExit(['gen-video.js', 'idle-dozing', '--no-first-frame', '--no-chroma'], 1, /必须同时提供 --last-frame/);
+expectExit(
+  ['gen-video.js', 'idle-dozing', '--image', sampleImage, '--key-color', 'FF00FF', '--no-chroma'],
+  1,
+  /#RRGGBB/,
+);
+expectExit(
+  ['gen-video.js', 'idle-dozing', '--image', sampleImage, '--key-color', '--no-chroma'],
+  1,
+  /缺少参数值/,
+);
 expectExit(['gen-video.js', 'idle-dozing', '--image', sampleImage, '--no-chroma'], 1, /DOUBAO_API_KEY 未设置/);
 expectExit(
   ['gen-video.js', 'collapse-sleep', '--image', sampleImage, '--last-frame', sampleImage, '--no-chroma'],
