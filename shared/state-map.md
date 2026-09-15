@@ -21,9 +21,9 @@
 - APNG: `routes/apng/conventions/loop-and-anchoring.md`
 - SVG: `routes/svg/conventions/loop-states.md`
 
-### 完整状态库（25 个交付状态）
+### 模板状态库（当前包含 25 个条目）
 
-> 模板包含 25 个 prompt 条目；`mini-peek` 也可以由剪辑得到。
+> 这是 pet-forge 当前模板和校验脚本使用的状态集合，不是所有桌宠的强制交付清单。真实运行时可以选用、扩展或映射自己的状态；`mini-peek` 也可以由剪辑得到。
 
 ```
 [core states]                                  类型
@@ -68,7 +68,7 @@
    └─ mini-sleep       mini 休眠                 A
 ```
 
-⚠️ **C 类只有 3 个但极其关键**——它们是状态机的"桥梁"，少了就会"咔嚓"姿态突变。
+⚠️ 当前模板包含 3 个 C 类状态。C 类是状态机的“桥梁”；具体需要哪些过渡由真实状态切换决定。
 
 ### 衔接链示例
 
@@ -107,9 +107,9 @@ mini 入场链:
 
 ---
 
-## 接运行时的最简方式
+## 接运行时的示例映射
 
-一个 theme 至少要提供这些状态文件：
+theme 需要提供目标运行时会读取的状态，或为缺失状态配置明确 fallback。下面给出一个覆盖较多常见事件的示例；它不是所有 theme 的最低数量要求：
 
 ```json
 {
@@ -183,35 +183,35 @@ Mini 模式不是 main idle 的缩小版。运行时和状态文件要分工：
 
 ---
 
-## 最小可上线集合
+## 示例交付分组
 
-不是所有状态都必须做。第一版能跑的最小集合：
+不是所有状态都必须做。下面只是用于讨论范围的示例分组，不能替代目标运行时的实际状态表。
 
-### 必做（5 个）
+### 常见核心状态
 
 ```
 idle, typing, thinking, sleeping, happy
 ```
 
-少了任意一个，桌宠都会"穿模"——比如没 idle 就一直 typing 看着累，没 happy 任务完成就没反馈。
+通常从运行时真正会触发的核心状态开始；缺少的状态应由明确 fallback 处理。
 
-### 强烈建议（再 3 个）
+### 常见反馈状态
 
 ```
 notification, error, carrying
 ```
 
-没这 3 个会缺反馈，但不会"穿模"。
+是否需要取决于产品是否有相应事件。
 
-### 高级（再 5 个）
+### 扩展表演状态
 
 ```
 working-building, working-juggling, working-conducting, working-sweeping, react-drag
 ```
 
-让桌宠"会反应"，但不是必须。
+用于增加变化，按用户目标选择。
 
-### Mini 模式（6 个）
+### Mini 模式示例
 
 ```
 mini-idle, mini-enter, mini-peek, mini-alert, mini-happy, mini-sleep
@@ -255,7 +255,7 @@ JS 监听外部信号（WebSocket / polling）切换 iframe src。
 ## 元教训
 
 1. **状态命名保持通用**：用 `idle / typing / thinking` 不要发明 `wait / coding / pondering`
-2. **每个状态文件大小控制**：SVG < 100KB、APNG < 1MB，否则切换卡
+2. **按真实运行时控制文件大小**：在目标设备测量加载和切换；不要把示例体积写成所有运行时的硬上限
 3. **过渡帧不在本表**：状态切换的过渡（如 idle → sleeping 的 falling-asleep）按需做，但不在 minimum 集合
 4. **状态间衔接看姿态**：所有结尾回到中性姿态的状态，互相切换才不突兀
 5. **不要为每个事件都做独立动画**：合理复用，比如 PreToolUse 和 PostToolUse 都用 typing 即可
