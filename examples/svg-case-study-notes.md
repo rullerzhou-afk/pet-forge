@@ -16,7 +16,7 @@ This file intentionally contains only public-safe notes. It does not point to pr
 - Subtle motion reads better than full deformation: try 70-90% morph/scale before 100%.
 - Three-layer stroke systems help pale characters remain grounded on light backgrounds.
 - Long-idle surprises need a quiet gap before the next trigger.
-- Static-frame approval is not enough; watch loops for at least 30 seconds.
+- Static-frame approval is not enough; watch multiple complete cycles, including the longest secondary motion.
 
 ## What Not To Copy
 

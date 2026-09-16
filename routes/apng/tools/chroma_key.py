@@ -170,8 +170,6 @@ def main():
         size_kb = os.path.getsize(output_apng) / 1024
         print(f"[5/5] Done! -> {output_apng} ({size_kb:.0f}KB)")
 
-        if size_kb > 500:
-            print("      WARNING: File > 500KB, consider reducing --height or --max-colors")
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
         print("      Temp files cleaned up")

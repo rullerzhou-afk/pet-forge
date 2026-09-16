@@ -1,9 +1,9 @@
 /**
- * pet-forge APNG 路线 —— 通用 Prompt 模板（25 个交付状态）
+ * pet-forge APNG 路线 —— 通用 Prompt 模板（当前含 25 个条目）
  * ─────────────────────────────────────────────────────────────
  * 这是模板，不是成品。用户必须改 CHARACTER_PREFIX 适配自己的角色。
  *
- * 状态库包含 25 个 prompt 条目；mini-peek 既可独立生成，也可从其他动画剪辑。
+ * 当前模板包含 25 个 prompt 条目；mini-peek 既可独立生成，也可从其他动画剪辑。
  * 抽掉了角色专属描述，留下通用骨架 + 实战验证过的 loop / 首尾帧关系。
  *
  * ─────────────────────────────────────────────────────────────
@@ -36,7 +36,11 @@
 // - 颜色 / 花纹（cream body with orange patches / metallic gray ...）
 // - 主要识别特征（big round eyes with white highlights / small triangle ears ...）
 // - 描边 / 渲染风格（thick dark outlines / cell-shaded / NO 3D rendering ...）
-// - 背景要求（与角色颜色分离的纯色色键；默认 #00B140）
+// - 背景要求（与角色颜色分离的纯色色键；默认 #00B140，可通过 --key-color 改写）
+//
+// 多图输入时，在具体 prompt 中明确“图1是首帧、图2是尾帧”以及各自姿势。
+// 道具参与动作时，补充 PROP CONTRACT：数量、轮廓、配色、纹样、接触点和遮挡关系。
+// “NO hands / NO fingers”只适用于角色拓扑本来就没有手的情况；动作需要手时应描述正确手势。
 //
 export const CHARACTER_PREFIX = `[在这里写你的角色外观描述。例如：
 A cute chibi/kawaii style {物种} character with {描边特征}, {体型特征},
@@ -62,7 +66,7 @@ export function buildBackgroundSuffix(keyColor = DEFAULT_KEY_COLOR) {
   return `The background must remain a uniform solid color (${normalized}) throughout the entire video. No shadows, no objects, no gradients on the background.`;
 }
 
-// ── 3. 完整状态库（25 个交付状态，按通用 state-mapping 分类） ────
+// ── 3. 当前模板状态库（按通用 state-mapping 分类） ───────────
 //
 // 字段说明：
 //   loop      —— 是否循环 (true / false)
@@ -73,7 +77,7 @@ export function buildBackgroundSuffix(keyColor = DEFAULT_KEY_COLOR) {
 //   prompt    —— 动作描述（不含 CHARACTER_PREFIX 和 BG_SUFFIX，拼接时自动加）
 //   notes     —— 质检要点
 //
-// ▼ 25 个交付状态，按用途分组 ▼
+// ▼ 当前模板条目，按用途分组 ▼
 //
 export const ANIMATIONS = {
 
@@ -126,7 +130,7 @@ export const ANIMATIONS = {
     anchor: 'same',
     duration: 5,
     refKey: 'building',
-    prompt: `The character is operating a tool (screwdriver / hammer / your character's tool) on a workpiece. Performs the operation with focused, determined expression, then repositions, then repeats. Tail sways slightly. Seamless loop animation. Body stays in place. NO hands, NO fingers visible (use your character's natural manipulators).`,
+    prompt: `The character is operating a tool (screwdriver / hammer / your character's tool) on a workpiece with its existing natural hand, paw, claw, tentacle, or other manipulator. Performs the operation with focused, determined expression, then repositions, then repeats. The tool stays consistent in shape, color, and contact point. Tail sways slightly. Seamless loop animation. Body stays in place. Do not add external human hands or extra limbs.`,
     notes: '拿工具+认真表情+循环衔接',
   },
 
@@ -178,8 +182,8 @@ export const ANIMATIONS = {
     anchor: 'same',
     duration: 3,
     refKey: 'react-drag',
-    prompt: `The character is floating in the air as if being dragged by an invisible force. NO hands visible. Looks thrilled and excited — eyes wide and sparkling, big happy grin, ears/extensions perked forward. Limbs spread out like airplane wings. Tail streams behind like a flag. Body sways and bounces slightly as if riding a rollercoaster. Seamless loop animation. Fun and energetic. DO NOT draw any hands or fingers.`,
-    notes: '无手, 角色悬浮兴奋飞行姿态, 循环',
+    prompt: `The character is floating in the air as if being dragged by an invisible force. Looks thrilled and excited — eyes wide and sparkling, big happy grin, ears/extensions perked forward. Existing limbs spread out like airplane wings. Tail streams behind like a flag. Body sways and bounces slightly as if riding a rollercoaster. Seamless loop animation. Fun and energetic. Do not add an external grabbing hand, extra fingers, or extra limbs.`,
+    notes: '不出现外部抓取手，角色悬浮兴奋飞行姿态，循环',
   },
 
   'react-poke': {
@@ -188,7 +192,7 @@ export const ANIMATIONS = {
     anchor: 'same',
     duration: 2.5,
     refKey: 'main',
-    prompt: `The character flinches and leans to one side with a surprised expression — eyes wide, ears perked. Raises one hand/paw as if startled. Then settles back to the EXACT original pose. 2.5 seconds, cute and slightly startled. NO hands, NO fingers visible — character reacts as if touched by an invisible force. The ending pose must match the starting pose EXACTLY.`,
+    prompt: `The character flinches and leans to one side with a surprised expression — eyes wide, ears perked. Raises one existing hand/paw as if startled. Then settles back to the EXACT original pose. 2.5 seconds, cute and slightly startled. The poke comes from an invisible force: do not add an external poking hand, extra fingers, or extra limbs. The ending pose must match the starting pose EXACTLY.`,
     notes: '惊讶歪身+抬手→回原姿势, 首尾帧严格一致',
   },
 
@@ -288,7 +292,7 @@ export const ANIMATIONS = {
     anchor: 'same',
     duration: 5,
     refKey: 'mini',
-    prompt: `The character is in a relaxed lying / sideways / curled pose (DIFFERENT from main idle, this is the mini-mode pose). Calm and content expression. Gentle breathing — body slowly rises and falls. Slow blinks. Slightly turns head to look to one side, then slowly back to center. Very gentle movement. Seamless loop, very calm. DO NOT change pose. Body stays in same lying position throughout.`,
+    prompt: `The character is in a relaxed lying / sideways / curled pose (DIFFERENT from main idle, this is the mini-mode pose). Calm and content expression. Gentle breathing — body slowly rises and falls. Slow blinks. Slightly turns head to look to one side, then slowly back to center. Very gentle movement. Seamless loop, very calm. DO NOT change the lying pose or shift position. Body stays in the same lying position throughout.`,
     notes: 'mini 模式 ≠ 缩小版 idle, 是不同姿态',
   },
 
@@ -362,7 +366,7 @@ export function buildFullPrompt(animationKey, { keyColor = DEFAULT_KEY_COLOR } =
 
 // ── 5. 列出所有动画（按首尾帧关系分组） ──────────────────────
 export function listAnimations() {
-  console.log('\n════════ 状态库 (共 ' + Object.keys(ANIMATIONS).length + ' 个交付状态) ════════\n');
+  console.log('\n════════ 当前模板状态库 (共 ' + Object.keys(ANIMATIONS).length + ' 个条目) ════════\n');
 
   const groupA = []; // 循环
   const groupB = []; // 一次性·回归型

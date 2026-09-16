@@ -1,19 +1,19 @@
 # pet-forge
 
-用于制作自定义 SVG / APNG 桌宠的工具、模板和工作说明。
+用于制作自定义 SVG、APNG 或两者混合桌宠的工具、模板和工作说明。
 
 pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用。它不是成品角色包，而是一套可复用的路线指南、prompt 模板、SVG 约定、APNG 后处理脚本、示例和状态映射说明。
 
 ## 路线
 
 ```
-[SVG 路线]                          [APNG 路线]
+[SVG 路线]                          [APNG / 混合路线]
 
 参考图                               prompt 模板
    -> 去背景                            -> AI 参考图
    -> PNG 转 SVG                        -> 首尾帧锚定的 AI 视频
    -> preset + SVG 模板                 -> 纯色色键抠图
-   -> 自包含 .svg.html                  -> .apng
+   -> 自包含 .svg.html                  -> .apng + 可选 SVG 精确效果层
 ```
 
 | 主题 | SVG 路线 | APNG 路线 |
@@ -28,11 +28,13 @@ pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用
 
 如果你想快速探索丰富视觉风格，并且能接受生成 API 和后处理，选 APNG。
 
+需要自然人物动作，同时还要准确文字、符号、粒子或发光时，可以使用混合路线：APNG 承载自然运动，SVG 承载逐帧跟随的精确效果。
+
 ## 作为 Codex Skill 使用
 
-本仓库包含 `SKILL.md`，因此 Codex 可以在规划或制作 SVG / APNG 桌宠资产时把 pet-forge 当作 skill 使用。这个 skill 会把 Codex 引导到仓库里的路线文档、模板、工具、示例和约束，而不是把任务当成从零生成。
+本仓库包含 `SKILL.md`，因此 Codex 可以在规划或制作 SVG、APNG 和混合桌宠资产时把 pet-forge 当作 skill 使用。这个 skill 会把 Codex 引导到仓库里的路线文档、模板、工具、示例和约束，而不是把任务当成从零生成。
 
-当你希望 Codex 帮你选择路线、把透明 PNG 转成 SVG、准备 APNG 生成 prompt、把生成视频后处理成 APNG，或接一个小型可运行 demo 时，可以使用它。
+Codex 的图像生成能力可以创建或编辑角色母图、姿势方案、首尾帧、中间关键帧和留白道具底图；模型直接编写结构化 SVG 则是另一种能力。除此之外，skill 还可以帮助选择路线、把透明 PNG 转成 SVG、准备 APNG prompt、组装片段、处理透明边缘、添加 SVG 效果和接入运行时。
 
 ## 先做角色拓扑盘点
 
@@ -64,7 +66,7 @@ flowchart TD
 
 ## 演示：同一张参考图，两条 SVG 路线
 
-用同一张参考图，对比 pet-forge 两种得到 SVG 的方式：工具路线（png2svg + vtracer 追踪），和直接交给 GPT-5.5 Pro 生成。
+用同一张参考图，对比 pet-forge 两种得到 SVG 的方式：工具路线（png2svg + vtracer 追踪），和让语言模型直接编写结构化 SVG。这里展示的是 SVG 代码生成，不是 Codex 的栅格图像生成功能。
 
 <table>
   <tr>
@@ -95,7 +97,7 @@ flowchart TD
 | 保真度 | 轮廓接近源图，脸部细节有损 | 模型自己的诠释，非像素级还原 |
 | 无障碍 | 无 | 带 `title` / `desc`（ARIA） |
 
-**有条件的话，建议优先用 GPT-5.5 Pro 这类前沿模型直接生成 SVG**：输出结构更干净、分好图层、可直接绑定动画。如果没有，工具路线（vtracer 追踪）是完全可用的替代方案，只是脸部等细节需要后续手工清理。两种产物都能复制进 `routes/svg/templates/hello-idle.svg.html` 里调 CSS 变量和动画。
+**有条件的话，可以让具备代码能力的模型直接编写 SVG**：输出可能更干净、分好图层、可直接绑定动画。如果没有，工具路线（vtracer 追踪）是完全可用的替代方案，只是脸部等细节需要后续手工清理。两种产物都能复制进 `routes/svg/templates/hello-idle.svg.html` 里调 CSS 变量和动画。具体模型只是案例记录，不是使用 pet-forge 的前置要求。
 
 复现工具路线（从仓库根目录）：
 
@@ -154,19 +156,17 @@ node gen-images.js --prompt "A cute chibi ..." --output reference/main-ref.png -
 node gen-video.js idle-dozing --image reference/main-ref.png --last-frame reference/main-ref.png --resolution 1080p --ratio 1:1 --camera-fixed --api doubao
 ```
 
-生成参考图之前，先按 [`routes/apng/conventions/doubao-video-output.md`](routes/apng/conventions/doubao-video-output.md) 选择整套动画统一使用的比例；该文档记录了豆包各分辨率档位的实际像素、输入图片限制和居中裁剪规则。
+参考图、首尾帧和输出视频应保持同一比例。豆包 / Seedance 的实际像素、输入限制与中心裁剪规则见 [`routes/apng/conventions/doubao-video-output.md`](routes/apng/conventions/doubao-video-output.md)。
 
-默认色键是绿色 `#00B140`。角色本身含绿色时，选一个与角色不冲突的颜色，并让视频 prompt 和自动后处理共用该值：
-
-```powershell
-node gen-video.js thinking --image reference/main-ref.png --last-frame reference/main-ref.png --api doubao --key-color "#FF00FF"
-```
-
-如果需要手动重跑色键抠图：
+如果需要手动重跑纯色色键抠图：
 
 ```powershell
-py chroma_key.py output/thinking/doubao-video.mp4 output/thinking/result.apng --plays 0 --key-color "#FF00FF"
+py chroma_key.py output/idle-dozing/doubao-video.mp4 output/idle-dozing/result.apng --plays 0 --key-color "#00B140"
 ```
+
+角色或特效包含大面积绿色时，应选择不冲突的色键，例如在生成阶段传入 `--key-color "#FF00FF"`；该值会同时用于视频背景要求和自动后处理。色键选择与边缘验收见 [`routes/apng/conventions/chroma-and-edges.md`](routes/apng/conventions/chroma-and-edges.md)。
+
+`chroma_key.py` 默认输出 200px 高、8fps、192 色，是有损预览起点。正式资产应按源视频和目标运行时显式设置 `--height`、`--fps` 和 `--max-colors`；参数说明见 [`routes/apng/tools/README.md`](routes/apng/tools/README.md)。
 
 ## 仓库结构
 
@@ -198,6 +198,7 @@ pet-forge/
 - 不提供 API key，也不替你支付生成服务费用。
 - 不替你决定最终审美。
 - 不承诺一键生成完整多状态桌宠。
+- 不内置通用的视频片段剪辑界面；复杂动作可以用外部剪辑工具或帧序列流程组装，再回到本仓库重建 APNG。
 
 ## 许可
 
