@@ -31,7 +31,7 @@ description: Create, repair, validate, and package SVG, APNG, or hybrid desktop 
 
 ### 反触发（不要触发）
 
-- 用户已经在做某个具体产品项目，而不是想用 pet-forge 新建角色
+- 现有项目中的任务与桌宠造型、动画素材、状态衔接、后期或运行时验证无关
 - 用户只是在问某个现有桌宠是什么，而不是动手做
 
 ---
@@ -156,6 +156,7 @@ py -3.13 -m rembg i input.png input-clean.png
 - 写 CHARACTER_PREFIX，参考 `routes/apng/prompts/template.js`；
 - 先按最大运动范围选择统一画幅；豆包 / Seedance 的比例、实际像素和裁剪规则见 `routes/apng/conventions/doubao-video-output.md`；
 - 准备角色身份参考、状态首尾帧、必要的中间关键帧和道具参考；
+- 另保存已选中性姿态的人物尺度锚点；新关键帧按人物本体的头身、中心和接触线对齐，外部道具与效果的总包围盒不作为人物大小；
 - 可使用 Codex 内置图像生成创建新图、补全身体、修正姿势、生成方案或编辑指定区域；
 - 特殊手势、握持或遮挡连续失败时，补充真人姿势照片、骨架草图或带运行时边界的合成预览；
 - 需要后期添加准确文字或符号时，先生成结构完整的空白纸张、卷轴或面板。
@@ -167,6 +168,7 @@ py -3.13 -m rembg i input.png input-clean.png
 - 按 `routes/apng/conventions/loop-and-anchoring.md` 判断 A / B / C；
 - 复杂动作按 `routes/apng/conventions/segment-assembly.md` 拆成进入、保持和退出等片段；
 - 相邻片段共用同一份中间关键帧；
+- 付费生成前核对实际请求中的首帧与尾帧输入位；同图首尾也要占两个输入位（当服务支持该模式时）。保存输入文件和请求记录；提示词写“回到开头”不能证明尾帧已上传；
 - prompt 明确图1/图2的输入角色、动作、锁定区域、道具身份、镜头和背景。
 
 ### 第 3 步：配置并生成
@@ -174,12 +176,13 @@ py -3.13 -m rembg i input.png input-clean.png
 - 本地工具按 `routes/apng/tools/README.md` 配置；
 - 使用豆包 / Seedance 时显式确认 `resolution`、`ratio` 和固定镜头需求；参考图、首尾帧和视频应保持同一画幅、人物尺度、中心轴与脚底线；
 - 外部 API 可能需要账号、额度或付费计划；
+- 模型名、能力、画幅、时长、价格和账号权益会变化；按本次服务的官方能力与当前账户状态核对。提交结果不确定时先恢复或查询原任务，不直接重开一次付费生成；
 - 用户已经授权具体生成批次时直接执行，不重复确认；不静默增加尝试次数，不把经验次数写成硬限制；
 - 限流、排队和模型能力变化时，根据当前服务反馈调整并发与重试。
 
 ### 第 4 步：审核原片
 
-连续播放检查动作、角色和道具身份、人体结构、镜头、背景、首尾帧和停顿。人物变形、增生或错误遮挡通常需要重生成；文字、粒子、跟随位置、颜色和透明边缘通常更适合后期处理。只重做不合格的片段，保留已通过部分。
+在目标桌宠尺寸连续播放检查动作、角色和道具身份、人体结构、镜头、背景、首尾帧和停顿，再放大定位细节。同图首尾只是输入锚定意图，不证明输出在姿态、颜色和运动上无缝。人物变形、增生或错误遮挡通常需要重生成；文字、粒子、跟随位置、颜色和透明边缘通常更适合后期处理。只重做不合格的片段，保留已通过部分。
 
 ### 第 5 步：组装和选择速度
 
@@ -190,11 +193,12 @@ py -3.13 -m rembg i input.png input-clean.png
 - 色键按角色色域选择，不能默认所有角色都用绿幕；
 - `chroma_key.py` 的硬遮罩、软边和去溢色都使用请求的 `--key-color`；仍需用代表性帧调节容差并检查细节侵蚀；
 - 按 `routes/apng/conventions/chroma-and-edges.md` 检查 alpha、边缘和跨片段色彩；
+- 以最终显示帧序和帧时长检查每轮都会经过的循环接点及相邻状态转场；调色端点要对齐它实际连接的片段。只改颜色时核对 alpha、帧序、时长与未改区域；
 - 按 `routes/apng/conventions/hybrid-overlays.md` 添加需要精确定位的文字、符号、粒子和发光。
 
 ### 第 7 步：锁定和接运行时
 
-按 `shared/asset-lifecycle.md` 区分关键帧、原片、透明人物层、完整合成、锁定资产和部署件。按 `shared/state-map.md` 配置 theme/state 映射，并在真实尺寸和真实 host 行为下连续播放验证。
+按 `shared/asset-lifecycle.md` 区分关键帧、原片、透明人物层、完整合成、锁定资产和部署件。复杂后期保留可回溯的全分辨率帧序与时序清单，APNG/WebP 等是按目标运行时导出的文件。按 `shared/state-map.md` 配置 theme/state 映射，并在真实尺寸和真实 host 行为下连续播放验证。技术检查、用户视觉选择、浏览器预览、真实运行时分别记录，不互相代替。
 
 ---
 
@@ -232,6 +236,7 @@ py -3.13 -m rembg i input.png input-clean.png
 | "色键怎么选 / 非绿幕怎么处理 / 透明边缘和跨片调色" | routes/apng/conventions/chroma-and-edges.md |
 | "APNG 上怎么叠文字、符号、粒子和发光" | routes/apng/conventions/hybrid-overlays.md |
 | "原片、透明层、合成和部署分别算什么阶段" | shared/asset-lifecycle.md |
+| "多状态实战里如何审循环、调色、画面尺度与定稿" | examples/apng-runtime-notes.md |
 | "AI 生视频常见翻车" | routes/apng/lessons/pitfalls.md |
 | "失败重跑 / API 限流" | routes/apng/lessons/pitfalls.md |
 

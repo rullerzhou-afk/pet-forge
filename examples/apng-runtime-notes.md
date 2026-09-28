@@ -1,40 +1,51 @@
-# Runtime And APNG Case Study Notes
+# 多状态 APNG 桌宠的制作复盘
 
-This file intentionally contains only public-safe notes. It avoids private local paths, personal authorship, repository statistics, and unpublished asset references.
+这里记录匿名化的多状态制作经验。它补充 [APNG 工作流](../routes/apng/conventions/workflow.md)、[首尾关系](../routes/apng/conventions/loop-and-anchoring.md)、[色键与调色](../routes/apng/conventions/chroma-and-edges.md)和[素材生命周期](../shared/asset-lifecycle.md)。不要复制既有产品的角色资产、私有提示词或未授权参考图；这里只复用判断方法。
 
-## What To Learn From The APNG Case Study
+| 曾出现的症状 | 判定与处理 | 怎样验收 |
+|---|---|---|
+| 同图首尾生成后，循环每轮闪亮数帧 | 先量偏色持续范围；若跨多帧，单删首帧只是移动接缝，可考虑只校正端点附近颜色 | 正常速度连续播放多轮，并核对最后显示帧接首帧 |
+| 转场单独播放顺滑，接在两个状态之间却跳色 | 两端原先对齐转场自己的中段色；改为分别对齐它实际连接的前后状态 | 连着播放完整状态链，检查两处边界 |
+| 贴边角色换状态后忽大忽小 | 道具、尾巴伸展和墙边空白改变了总外框；改用同一主体锚点校准 | 在真实窗口尺寸叠影比较，随后检查全帧裁切 |
+| 提示符号原尺寸清楚，缩到桌宠尺寸消失 | 调整线宽、明暗对比或出现时机，避免与人物主体同色混成一团 | 在目标尺寸和不同底色上看完整动作 |
 
-- Keep a stable reference image for each character.
-- Split states by first/last-frame relationship:
-  - A: looping, first frame equals last frame.
-  - B: one-shot return, first frame equals last frame.
-  - C: transition, first frame differs from last frame.
-- Use a consistent chroma key color across reference image, prompt, and post-processing.
-- Budget for reruns; generated video is probabilistic.
-- Package finished assets behind a generic runtime state map.
+## 角色与画面：让参考图各司其职
 
-## Runtime Takeaways
+- 先读原有角色规范，再确定当前已选母图。旧概念图、上游设定和新姿势图可能分别擅长身份、结构、表演，不能让其中一张顺手覆盖所有决策。
+- 多视图用于核对身体连接、服装和遮挡；动作关键帧用于锁定本次姿势、表情与道具。连续修改动作图时仍要回到已选母图对照脸和比例，否则眼形、下巴与材质容易逐版漂移。
+- 用已选中性姿态建立主体尺度锚点，按角色拓扑选择稳定的轮廓、中心与接触线。坐下、躺下或加入大件道具会改变整体外框，不代表主体应该缩小。活动范围不足时先检查画布与构图留白。
+- 关键动作要有一个可见的意图：角色看向什么、主动做什么、怎样反应、最后停在哪儿。短片里塞入过多动机或无关道具，会削弱动作和表情的因果。
+- 可分离、可逐帧定位的道具或效果可与人物分层制作。视频负责自然动作，后期层负责精确文字、可控数量、符号、阶段变化或粒子；握持、抛接与遮挡关系仍须在原片中成立。各层共享帧序与时钟。
+- 道具数量正确仍不等于动作连续：同一物件的路径、颜色、遮挡与接触点都要跨帧跟踪。后期删除贴着手、嘴或头饰的多余物件时，先检查是否会挖掉人物。
+- mini 或贴边形态先读 host 的窗口与位移合同，再单独选择姿势、尺度和颜色基准；不能把普通 idle 简单缩小。墙、边缘与人物手位要放在同一舞台叠图比较。
 
-A desktop-pet runtime usually needs:
+## 生成：输入锚点和实际请求都要核对
 
-- a state registry;
-- files for core states such as idle, typing, thinking, sleeping, happy, notification, and error;
-- optional mini/dock states;
-- event-to-state mapping;
-- a way to switch SVG/APNG assets at runtime.
+- 先按真实状态机确定循环、一次性回归或过渡。过渡的尾帧应接目标状态；同一张首尾参考图只是目标姿态，不能保证生成片段的像素、颜色和运动端点相同。
+- 支持首尾帧的服务里，同图首尾也应在请求中分别占首帧、尾帧输入位。保存实际输入文件、顺序和请求记录；提示词中写“首尾一致”不是上传成功的证据。
+- 生成前核对当前渠道的模型能力、时长、画幅、费用和账户可用性。不同渠道即使使用相近的模型名称，请求字段也可能不同。提交结果不明时查询或恢复原任务，避免重复扣费。
+- 按用户授权的批次制作。生成完成、资源可下载、文件可解码、动作可用、视觉获选是不同结论；只把实际达到的阶段记为通过。
 
-Use `shared/state-map.md` as the public reference for this repository.
+## 审原片：看完整动作和真实循环
 
-## What Not To Copy
+- 先按桌宠实际显示尺寸连续播放，再放大检查手、眼、接触点、描边与道具。静帧和像素指标用来定位问题，不能代替正常速度的观感。
+- 逐一看首帧、前几帧、中段、末尾几帧，以及最后显示帧接回首帧。多轮播放能暴露突然变亮、变暗、跳姿势、停顿和首尾速度不连续。
+- 原片出现人体增生、错误遮挡、道具换身份或核心动作缺失时，通常应重生成相关片段。文字、可定位效果、停顿和局部色差通常更适合后期。
+- 不把“删掉第一帧”当通用修法。偏色若跨越多帧，删一帧只会把跳变挪到新的开头；裁帧还会改变特效相位和每轮时长。先确定缺陷随时间的范围，再选修法。
 
-- Do not copy existing product character assets.
-- Do not reuse a product-specific `CHARACTER_PREFIX`.
-- Do not assume private runtime source files are available to public users.
+## 后期：按最终显示链处理
 
-## Relevant pet-forge Files
+- 复杂后期先保留原片的全分辨率解码帧，抠图后保留可回溯的 RGBA 帧，并记录每帧时长、来源和播放位置映射。人物层、道具层、SVG 效果与导出文件按同一帧序组装；APNG、WebP 与网页预览是面向目标的导出。
+- 精确效果在目标尺寸检查可读性、对比度与遮挡。符号的各部件若需拆成前后层，先确定完整图形与共同样式，再切层并逐帧查接缝；别让两层各自重算线宽、渐变或透明度。
+- 色键用原片多帧、多位置的实际背景取样。检查角色内部被围住的空隙：有些是真正应透明的负空间，有些是画面噪声；不能一律填洞或一律删除。保护原有描边、细线、彩色道具与半透明效果。
+- 透明结果在浅底、深底、棋盘和目标桌面背景连续播放。主体结构错误通常回到生成阶段；可局部修复的源片污点若会干扰抠图，则先修该处。抠背景、去溢色、对齐颜色与清边的顺序按素材决定，每一步都与输入比较。
+- 调色优先使用已选最终展示资产作基准；新项目尚无成品时，使用已确认的角色参考或已锁定状态，而不是任意原片或中间透明层。若产品有不同视觉模式，可以分别选各自的基准，不强行套一份颜色表。
+- 循环段的端点对齐本段稳定颜色；转场段的两端对齐它实际连接的前后状态。按最终播放帧映射找每轮都经过的接缝，而不是只看文件的第 0 帧与最后一帧。只改颜色时核对 alpha、帧数、时长、未选区域与受保护原件。
 
-- `routes/apng/prompts/template.js`
-- `routes/apng/conventions/workflow.md`
-- `routes/apng/conventions/loop-and-anchoring.md`
-- `routes/apng/tools/`
-- `shared/state-map.md`
+## 定稿与接入：分别记录结论
+
+- 维护一份已选版本清单，说明每个状态目前引用的完整帧序、来源、速度和效果层。不要把某次外部执行者的输出目录或待选候选直接当作收藏页的最终版；复核网页实际加载的文件。
+- 让用户看能暂停、重播、逐帧定位、切换背景的预览，并默认以真实桌宠尺寸播放。技术检查通过、用户审美确认、浏览器动态通过、运行时通过和公开发布是各自独立的结果。
+- 比较版即使技术指标更平滑，也不自动取代用户已选的表演。记录实际选中的帧段、速度和效果版本；新方案通过技术检查后仍须明确它是候选还是已选。
+- 运行时校准主体大小时，不让大件道具、伸展的附属物与外围特效决定尺度；稳定的附属物连接仍要检查。先定主体尺度，再定位置；主体与随身效果共享固定的 host 变换，效果仍可逐帧跟随自己的局部锚点。避免逐帧自动居中整个主体造成抖动。最后在真实 host 中复查裁切、点击区域、状态切换与循环。
+- 同事或外部模型的报告是待核实的证据。检查它所用输入是否与当前展示一致，独立读回输出和保护范围，再决定接受哪些结论。
