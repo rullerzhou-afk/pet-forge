@@ -1,6 +1,6 @@
 ---
 name: pet-forge
-description: Create, repair, validate, and package SVG, APNG, or hybrid desktop pets using pet-forge templates, Codex image generation, animation conventions, state mappings, and generation tools. Use when the user asks to make a desktop pet, create or edit character keyframes, animate idle or agent states, choose an asset route, convert a reference image into a pet asset, or validate and package a multi-state pet.
+description: Create, repair, validate, and package SVG, APNG, or hybrid desktop pets from a concept, generated or provided images, and state mappings. Use when the user asks to make a desktop pet, start a character from image generation, create or edit character keyframes, animate idle or agent states, choose an asset route, convert a reference image into a pet asset, or validate and package a multi-state pet.
 ---
 
 # pet-forge skill —— 触发条件 + 调用流程
@@ -31,7 +31,7 @@ description: Create, repair, validate, and package SVG, APNG, or hybrid desktop 
 
 ### 反触发（不要触发）
 
-- 用户已经在做某个具体产品项目，而不是想用 pet-forge 新建角色
+- 现有项目中的任务与桌宠造型、动画素材、状态衔接、后期或运行时验证无关
 - 用户只是在问某个现有桌宠是什么，而不是动手做
 
 ---
@@ -88,9 +88,11 @@ description: Create, repair, validate, and package SVG, APNG, or hybrid desktop 
 
 ### 第 1 步：确定角色基础造型
 
+从零生图、外部 API 和已有图片共用的选图与交接方法见 `shared/image-generation.md`。
+
 根据用户现有素材选择来源：
 - 已有 PNG → 直接用；
-- 想让 AI 生成或编辑 → 当前 Codex 有图像生成能力时优先直接使用，也可以使用用户指定的其他工具；
+- 想让 AI 生成或编辑 → 当前 Codex 有内置生图能力且用户未指定渠道时可直接使用；用户指定图像 API 时走对应服务并保存本地成品；
 - 自己画 → Figma / Procreate / 其他绘图工具。
 
 用户说“去生图”“再画一版”或指定若干方案时，已经授权了这一批图像生成。按请求的范围执行，不额外设置固定张数，也不静默扩大批次。编辑已有角色前先查看输入图片，只修改用户指定的结构或姿势，保留其余识别特征。
@@ -153,10 +155,12 @@ py -3.13 -m rembg i input.png input-clean.png
 
 ### 第 1 步：建立参考图与关键帧库
 
+- 按 `shared/image-generation.md` 从 Codex 内置生图、用户指定 API 或已有图片进入同一选图流程；仓库自带的 `gen-images.js` 目前仅是豆包文生图示例，其他来源只需交付已选本地图片；
 - 写 CHARACTER_PREFIX，参考 `routes/apng/prompts/template.js`；
 - 先按最大运动范围选择统一画幅；豆包 / Seedance 的比例、实际像素和裁剪规则见 `routes/apng/conventions/doubao-video-output.md`；
 - 准备角色身份参考、状态首尾帧、必要的中间关键帧和道具参考；
-- 可使用 Codex 内置图像生成创建新图、补全身体、修正姿势、生成方案或编辑指定区域；
+- 另保存已选中性姿态的主体尺度锚点；新关键帧按角色拓扑选择稳定轮廓、中心和接触线对齐，外部道具与效果的总包围盒不作为主体大小；
+- 选定身份母图后再据此补全身体、修正姿势和制作首尾帧；候选姿势图不自动取代身份母图；
 - 特殊手势、握持或遮挡连续失败时，补充真人姿势照片、骨架草图或带运行时边界的合成预览；
 - 需要后期添加准确文字或符号时，先生成结构完整的空白纸张、卷轴或面板。
 
@@ -167,6 +171,7 @@ py -3.13 -m rembg i input.png input-clean.png
 - 按 `routes/apng/conventions/loop-and-anchoring.md` 判断 A / B / C；
 - 复杂动作按 `routes/apng/conventions/segment-assembly.md` 拆成进入、保持和退出等片段；
 - 相邻片段共用同一份中间关键帧；
+- 付费生成前核对实际请求中的图片角色与首尾输入位。其他客户端或网页端做同图首尾锚定时，确认图片分别进入首帧、尾帧输入位（服务支持时）。本仓库 `gen-video.js` 在首尾相同状态的普通模式下，会自动把 `--image` 补作尾帧；`--ref-mode` 下图 1 只作角色参考，不锚定首帧，也不会自动补尾帧，如需尾帧锚定须显式传 `--last-frame`。转场使用为该段构图准备的专用端点，不能直接拿通用待机图替代。保存输入文件和请求记录；提示词写“回到开头”不能证明尾帧已上传；
 - prompt 明确图1/图2的输入角色、动作、锁定区域、道具身份、镜头和背景。
 
 ### 第 3 步：配置并生成
@@ -174,12 +179,13 @@ py -3.13 -m rembg i input.png input-clean.png
 - 本地工具按 `routes/apng/tools/README.md` 配置；
 - 使用豆包 / Seedance 时显式确认 `resolution`、`ratio` 和固定镜头需求；参考图、首尾帧和视频应保持同一画幅、人物尺度、中心轴与脚底线；
 - 外部 API 可能需要账号、额度或付费计划；
+- 模型名、能力、画幅、时长、价格和账号权益会变化；按本次服务的官方能力与当前账户状态核对；
 - 用户已经授权具体生成批次时直接执行，不重复确认；不静默增加尝试次数，不把经验次数写成硬限制；
 - 限流、排队和模型能力变化时，根据当前服务反馈调整并发与重试。
 
 ### 第 4 步：审核原片
 
-连续播放检查动作、角色和道具身份、人体结构、镜头、背景、首尾帧和停顿。人物变形、增生或错误遮挡通常需要重生成；文字、粒子、跟随位置、颜色和透明边缘通常更适合后期处理。只重做不合格的片段，保留已通过部分。
+在目标桌宠尺寸连续播放检查动作、角色和道具身份、人体结构、镜头、背景、首尾帧和停顿，再放大定位细节。同图首尾只是输入锚定意图，不证明输出在姿态、颜色和运动上无缝。先判断问题能否不重画主体而剪除、遮住或重新对拍；无法恢复的裁切、不可分离的增生通常要重生成，独立效果、局部颜色和透明边缘常可后期修复。只重做不合格的片段，保留已通过部分。
 
 ### 第 5 步：组装和选择速度
 
@@ -190,11 +196,12 @@ py -3.13 -m rembg i input.png input-clean.png
 - 色键按角色色域选择，不能默认所有角色都用绿幕；
 - `chroma_key.py` 的硬遮罩、软边和去溢色都使用请求的 `--key-color`；仍需用代表性帧调节容差并检查细节侵蚀；
 - 按 `routes/apng/conventions/chroma-and-edges.md` 检查 alpha、边缘和跨片段色彩；
+- 以最终显示帧序和帧时长检查每轮都会经过的循环接点及相邻状态转场；调色端点要对齐它实际连接的片段。只改颜色时核对 alpha、帧序、时长与未改区域；
 - 按 `routes/apng/conventions/hybrid-overlays.md` 添加需要精确定位的文字、符号、粒子和发光。
 
 ### 第 7 步：锁定和接运行时
 
-按 `shared/asset-lifecycle.md` 区分关键帧、原片、透明人物层、完整合成、锁定资产和部署件。按 `shared/state-map.md` 配置 theme/state 映射，并在真实尺寸和真实 host 行为下连续播放验证。
+按 `shared/asset-lifecycle.md` 区分关键帧、原片、透明人物层、完整合成、锁定资产和部署件。复杂后期保留可回溯的全分辨率帧序与时序清单，APNG/WebP 等是按目标运行时导出的文件。按 `shared/state-map.md` 配置 theme/state 映射，并在真实尺寸和真实 host 行为下连续播放验证。
 
 ---
 
@@ -225,13 +232,15 @@ py -3.13 -m rembg i input.png input-clean.png
 | "SVG 状态怎么验收" | routes/svg/conventions/validation-runbook.md |
 | "preset 是什么 / 怎么用" | routes/svg/presets/<preset>.md |
 | "PNG 怎么转 SVG" | routes/svg/tools/png2svg/README.md |
+| "从角色想法生图 / 已有图或 API 怎么接入 / 怎么选母图与关键帧" | shared/image-generation.md |
 | "AI 生成 prompt 怎么写" | routes/apng/conventions/workflow.md + routes/apng/prompts/template.js |
-| "怎么用 Codex 生母图 / 补全 / 改姿势 / 生关键帧" | routes/apng/conventions/workflow.md §第 1 步：建立参考图与关键帧库 |
+| "怎么用 Codex 生母图 / 补全 / 改姿势 / 生关键帧" | shared/image-generation.md + routes/apng/conventions/workflow.md §第 1 步 |
 | "复杂动作怎么拆段 / 图1图2怎么写 / 怎么拼接 / 怎么选速度" | routes/apng/conventions/segment-assembly.md |
 | "豆包 / Seedance 画幅、比例、分辨率、参考图尺寸怎么选 / 1080p 实际多大 / 为什么会裁切" | routes/apng/conventions/doubao-video-output.md |
 | "色键怎么选 / 非绿幕怎么处理 / 透明边缘和跨片调色" | routes/apng/conventions/chroma-and-edges.md |
 | "APNG 上怎么叠文字、符号、粒子和发光" | routes/apng/conventions/hybrid-overlays.md |
 | "原片、透明层、合成和部署分别算什么阶段" | shared/asset-lifecycle.md |
+| "多状态实战里如何审循环、调色、画面尺度与定稿" | examples/apng-runtime-notes.md |
 | "AI 生视频常见翻车" | routes/apng/lessons/pitfalls.md |
 | "失败重跑 / API 限流" | routes/apng/lessons/pitfalls.md |
 
@@ -279,6 +288,7 @@ skill 不是写完就完，是个**慢慢迭代的产品**。
 - v0.1（2026-05-02 初版）：双路线骨架铺完，hello-idle 模板入库，APNG 路线工具完成迁移与基础入口修正
 - v0.2（2026-06-17）：补 SVG 分层母版、rig-first、tuner→canonical、验证 runbook、scripted SVG 嵌入、mini host 分工、APNG 绿幕/边缘质量经验
 - v0.3（2026-09-15）：补 Codex 生图、关键帧库、分段组装、速度选择、任意色键边界、跨片调色、APNG+SVG 混合合成和素材生命周期
-- v0.4 计划：用不同拓扑角色继续验证通用性
+- v0.4（2026-09-28）：补从生图到已选图片的统一入口、匿名化多状态制作复盘、主体尺度与运行时播放映射的验收判据
+- 下一步：用不同拓扑角色继续验证通用性
 
 当前进度详见 `CLAUDE.md` §Current Status。

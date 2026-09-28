@@ -30,11 +30,13 @@ pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用
 
 需要自然人物动作，同时还要准确文字、符号、粒子或发光时，可以使用混合路线：APNG 承载自然运动，SVG 承载逐帧跟随的精确效果。
 
+已经在做多状态角色时，可参考[匿名化制作复盘](examples/apng-runtime-notes.md)：它集中说明角色尺度、付费生成输入、真实循环接缝、透明边缘、调色基准和定稿验收中容易误判的地方。
+
 ## 作为 Codex Skill 使用
 
-本仓库包含 `SKILL.md`，因此 Codex 可以在规划或制作 SVG、APNG 和混合桌宠资产时把 pet-forge 当作 skill 使用。这个 skill 会把 Codex 引导到仓库里的路线文档、模板、工具、示例和约束，而不是把任务当成从零生成。
+本仓库包含 `SKILL.md`，因此 Codex 可以把 pet-forge 当作 skill 使用：从角色想法或已有图片开始，制作 SVG、APNG 或混合桌宠资产，并按仓库里的路线文档、模板和工具继续完成动画。
 
-Codex 的图像生成能力可以创建或编辑角色母图、姿势方案、首尾帧、中间关键帧和留白道具底图；模型直接编写结构化 SVG 则是另一种能力。除此之外，skill 还可以帮助选择路线、把透明 PNG 转成 SVG、准备 APNG prompt、组装片段、处理透明边缘、添加 SVG 效果和接入运行时。
+从角色想法开始时，可以用 Codex 内置生图能力创建或编辑母图、姿势方案和关键帧；用户指定图像 API 或已有图片也能接入同一选图流程，见[从角色想法到已选图片](shared/image-generation.md)。模型直接编写结构化 SVG 是另一种能力。除此之外，skill 还可以帮助选择路线、把透明 PNG 转成 SVG、准备 APNG prompt、组装片段、处理透明边缘、添加 SVG 效果和接入运行时。
 
 ## 先做角色拓扑盘点
 
@@ -140,6 +142,8 @@ py -3.13 routes\svg\tools\png2svg\png2svg.py your-character-clean.png character.
 PNG 转 SVG 这一步使用 vtracer 作为矢量化引擎。它最适合简单、低色数、边界干净的图形；复杂照片、渐变、毛发、纹理和噪点边缘可能生成巨大或很差的 SVG。源图复杂时，优先走 APNG 路线，或手工重画关键 SVG 结构。
 
 ### APNG 路线
+
+下面是仓库自带的豆包 API 脚本示例；Codex 内置生图、其他图像 API 或已有图片可先按[选图流程](shared/image-generation.md)得到本地图片，再从视频步骤接入。当前 `gen-images.js` 的 `--api` 不支持任意服务。
 
 ```powershell
 git clone <pet-forge-repo>

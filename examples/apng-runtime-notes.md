@@ -1,40 +1,12 @@
-# Runtime And APNG Case Study Notes
+# 多状态 APNG 桌宠的制作复盘
 
-This file intentionally contains only public-safe notes. It avoids private local paths, personal authorship, repository statistics, and unpublished asset references.
+以下只记录匿名化的“症状 → 判断 → 修法 → 验收”案例；操作细节见 [APNG 工作流](../routes/apng/conventions/workflow.md)、[首尾关系](../routes/apng/conventions/loop-and-anchoring.md)、[色键与调色](../routes/apng/conventions/chroma-and-edges.md)和[素材生命周期](../shared/asset-lifecycle.md)。不复制原项目文字、提示词、角色图或未授权参考图。
 
-## What To Learn From The APNG Case Study
-
-- Keep a stable reference image for each character.
-- Split states by first/last-frame relationship:
-  - A: looping, first frame equals last frame.
-  - B: one-shot return, first frame equals last frame.
-  - C: transition, first frame differs from last frame.
-- Use a consistent chroma key color across reference image, prompt, and post-processing.
-- Budget for reruns; generated video is probabilistic.
-- Package finished assets behind a generic runtime state map.
-
-## Runtime Takeaways
-
-A desktop-pet runtime usually needs:
-
-- a state registry;
-- files for core states such as idle, typing, thinking, sleeping, happy, notification, and error;
-- optional mini/dock states;
-- event-to-state mapping;
-- a way to switch SVG/APNG assets at runtime.
-
-Use `shared/state-map.md` as the public reference for this repository.
-
-## What Not To Copy
-
-- Do not copy existing product character assets.
-- Do not reuse a product-specific `CHARACTER_PREFIX`.
-- Do not assume private runtime source files are available to public users.
-
-## Relevant pet-forge Files
-
-- `routes/apng/prompts/template.js`
-- `routes/apng/conventions/workflow.md`
-- `routes/apng/conventions/loop-and-anchoring.md`
-- `routes/apng/tools/`
-- `shared/state-map.md`
+| 症状 | 判断与修法 | 验收 |
+|---|---|---|
+| 同图首尾生成后，循环每轮闪亮数帧 | 先量偏色持续范围；若跨多帧，单删首帧只是移动接缝，可考虑只校正端点附近颜色 | 正常速度连续播放多轮，并核对最后显示帧接首帧 |
+| 转场单独播放顺滑，接在两个状态之间却跳色 | 两端原先对齐转场自己的中段色；改为分别对齐它实际连接的前后状态 | 连着播放完整状态链，检查两处边界 |
+| 贴边角色换状态后忽大忽小 | 道具、尾巴伸展和墙边空白改变了总外框；改用同一主体锚点校准 | 在真实窗口尺寸叠影比较，随后检查全帧裁切 |
+| 提示符号原尺寸清楚，缩到桌宠尺寸消失 | 调整线宽、明暗对比或出现时机，避免与人物主体同色混成一团 | 在目标尺寸和不同底色上看完整动作 |
+| 剧本动作次数与成片不符，但动作完整 | 按成片实际节拍安排独立后期层，不必立即重生 | 逐次核对动作、道具阶段与合成时间 |
+| 描边外出现断续脏点，或内部出现键色块 | 分清造型线尖与压缩脏边；检查不透明残留，烘焙色斑只修色不挖洞 | 在浅底、深底和目标桌面连续播放 |

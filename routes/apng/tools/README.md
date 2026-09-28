@@ -21,7 +21,7 @@ prompts/   gen-images.js  gen-video.js           chroma_key.py
 
 ## ⚠️ 用本路线前必读
 
-1. **需要外部 API key**：图像/视频生成服务通常需要账号、额度或付费计划。
+1. **使用本目录的生成脚本需要外部 API key**：Codex 内置生图或已有图片不需要这里的图像 API key；使用本目录视频脚本仍需相应服务的账号和额度。
 2. **要 Node + Python + ffmpeg**：管线跨两个语言运行时。
 3. **AI 生成不可控**：同一 prompt 多次生成也可能得到不同版本。按用户反馈和成本决定是否继续尝试。
 4. **循环无缝难做**：相同首尾输入只能提供锚点，成片仍要连续播放检查，必要时后期剪辑。
@@ -79,13 +79,13 @@ node test-api.js
 
 ### 第 1 步：准备参考图（reference image）
 
-先准备一张**主参考图**锁定角色身份；特殊姿势、道具和复杂过渡再增加对应的首帧、尾帧或中间关键帧。参考图数量由动作需要决定。
+先按[选图流程](../../../shared/image-generation.md)准备一张**已选身份母图**；特殊姿势、道具和复杂过渡再增加对应的首帧、尾帧或中间关键帧。参考图数量由动作需要决定。以下命令仅示范本仓库现有的豆包文生图 API；它不提供参考图编辑，也不支持其他服务的 `--api` 值。
 
 ```powershell
-node gen-images.js --prompt "A cute chibi cat, sitting upright, ..." --output reference/main-ref.png
+node gen-images.js --prompt "A cute chibi cat, sitting upright, ..." --output reference/main-ref.png --api doubao
 ```
 
-当前 Codex 有图像生成能力时，可以直接创建角色母图、补全身体、修改指定姿势或生成关键帧；也可以使用用户指定的网页端或其他工具。无论来源如何，都应保存并复用用户已经选定的实际图片文件。
+当前 Codex 有图像生成能力时可直接创建或编辑；其他图像 API、手绘和用户已有图片也可接入。无论来源如何，都应保存并复用用户已经选定的实际图片文件；视频工具的 `--image` 与 `--last-frame` 接受本地路径。
 
 ### 第 2 步：用参考图 + 动作 prompt 生视频
 

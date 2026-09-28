@@ -7,3 +7,4 @@ __pycache__/
 
 routes/apng/tools/output/
 routes/apng/tools/reference/
+.codex/
