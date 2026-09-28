@@ -61,7 +61,7 @@ The toolkit does:
 - `SKILL.md`: skill trigger and workflow guidance.
 - `routes/svg/`: SVG presets, template, conventions, lessons, and `png2svg`.
 - `routes/apng/`: prompt template, APNG workflow docs, segment assembly, chroma/edge rules, hybrid overlays, lessons, and tools.
-- `shared/`: route-independent state map, asset lifecycle, and lessons.
+- `shared/`: route-independent image generation and selection intake, state map, asset lifecycle, and lessons.
 - `examples/`: public-safe case-study notes.
 
 The APNG tools have basic CLI validation. Real generation still requires user-provided API keys, network access, API credits, and `ffmpeg`.

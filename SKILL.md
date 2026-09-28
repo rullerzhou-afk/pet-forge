@@ -1,6 +1,6 @@
 ---
 name: pet-forge
-description: Create, repair, validate, and package SVG, APNG, or hybrid desktop pets from a concept, generated or provided images, and state mappings. Use for desktop-pet character and keyframe creation, animation, repair, and runtime validation.
+description: Create, repair, validate, and package SVG, APNG, or hybrid desktop pets from a concept, generated or provided images, and state mappings. Use when the user asks to make a desktop pet, start a character from image generation, create or edit character keyframes, animate idle or agent states, choose an asset route, convert a reference image into a pet asset, or validate and package a multi-state pet.
 ---
 
 # pet-forge skill —— 触发条件 + 调用流程
@@ -171,7 +171,7 @@ py -3.13 -m rembg i input.png input-clean.png
 - 按 `routes/apng/conventions/loop-and-anchoring.md` 判断 A / B / C；
 - 复杂动作按 `routes/apng/conventions/segment-assembly.md` 拆成进入、保持和退出等片段；
 - 相邻片段共用同一份中间关键帧；
-- 付费生成前核对实际请求中的首帧与尾帧输入位；同图首尾也要占两个输入位（当服务支持该模式时）。转场使用为该段构图准备的专用端点，不能直接拿通用待机图替代。保存输入文件和请求记录；提示词写“回到开头”不能证明尾帧已上传；
+- 付费生成前核对实际请求中的图片角色与首尾输入位。其他客户端或网页端做同图首尾锚定时，确认图片分别进入首帧、尾帧输入位（服务支持时）。本仓库 `gen-video.js` 在首尾相同状态的普通模式下，会自动把 `--image` 补作尾帧；`--ref-mode` 下图 1 只作角色参考，不锚定首帧，也不会自动补尾帧，如需尾帧锚定须显式传 `--last-frame`。转场使用为该段构图准备的专用端点，不能直接拿通用待机图替代。保存输入文件和请求记录；提示词写“回到开头”不能证明尾帧已上传；
 - prompt 明确图1/图2的输入角色、动作、锁定区域、道具身份、镜头和背景。
 
 ### 第 3 步：配置并生成
@@ -288,6 +288,7 @@ skill 不是写完就完，是个**慢慢迭代的产品**。
 - v0.1（2026-05-02 初版）：双路线骨架铺完，hello-idle 模板入库，APNG 路线工具完成迁移与基础入口修正
 - v0.2（2026-06-17）：补 SVG 分层母版、rig-first、tuner→canonical、验证 runbook、scripted SVG 嵌入、mini host 分工、APNG 绿幕/边缘质量经验
 - v0.3（2026-09-15）：补 Codex 生图、关键帧库、分段组装、速度选择、任意色键边界、跨片调色、APNG+SVG 混合合成和素材生命周期
-- v0.4 计划：用不同拓扑角色继续验证通用性
+- v0.4（2026-09-28）：补从生图到已选图片的统一入口、匿名化多状态制作复盘、主体尺度与运行时播放映射的验收判据
+- 下一步：用不同拓扑角色继续验证通用性
 
 当前进度详见 `CLAUDE.md` §Current Status。
