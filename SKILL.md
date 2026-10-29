@@ -60,6 +60,7 @@ description: Create, repair, validate, and package SVG, APNG, or hybrid desktop 
    ├─ "想要精致圆润矢量感" → SVG 路线 + apple-precise preset
    ├─ "想要像素感" → SVG 路线 + pixel-art preset
    ├─ "自然人物动作 + 精确文字/粒子/符号" → APNG 人物层 + SVG 效果层
+   ├─ "主体 SVG 已可用，只有局部变形难保真" → 保留主体，评估局部透明帧序列 / 补画端点
    └─ "都想试试" → 先 SVG（启动门槛低），跑通再考虑 APNG
 ```
 
@@ -69,7 +70,7 @@ description: Create, repair, validate, and package SVG, APNG, or hybrid desktop 
 
 ### 第 0 步：角色拓扑盘点
 
-先不要默认角色一定有完整头、身体、手脚和嘴巴。问清：
+先查看已有素材和需求，不要默认角色一定有完整头、身体、手脚和嘴巴；只补问仍不清楚的部分：
 
 - 主体形态：只有头、头+身体、一团主体、道具/物件，还是其他轮廓；
 - 脸部结构：有没有眼睛、嘴巴、腮红、表情符号；
@@ -91,13 +92,14 @@ description: Create, repair, validate, and package SVG, APNG, or hybrid desktop 
 从零生图、外部 API 和已有图片共用的选图与交接方法见 `shared/image-generation.md`。
 
 根据用户现有素材选择来源：
+- 已有分层 SVG → 先按 `routes/svg/conventions/source-to-animation-master.md` 核对造型、命名层、表情变体、固定安放变换和控制器；可用时直接复用，跳过 PNG 转换；
 - 已有 PNG → 直接用；
 - 想让 AI 生成或编辑 → 当前 Codex 有内置生图能力且用户未指定渠道时可直接使用；用户指定图像 API 时走对应服务并保存本地成品；
 - 自己画 → Figma / Procreate / 其他绘图工具。
 
 用户说“去生图”“再画一版”或指定若干方案时，已经授权了这一批图像生成。按请求的范围执行，不额外设置固定张数，也不静默扩大批次。编辑已有角色前先查看输入图片，只修改用户指定的结构或姿势，保留其余识别特征。
 
-**关键**：保证用户拿到一张**透明背景 PNG**。如果不是透明，引导用户用 `rembg` 处理：
+走 PNG 描图入口时，使用**真实透明背景 PNG**；已有 SVG 无需先转 PNG。需要去背景时可使用外部 `rembg`：
 
 ```powershell
 py -3.13 -m pip install "rembg[cpu,cli]"
@@ -106,9 +108,9 @@ py -3.13 -m rembg i input.png input-clean.png
 
 提醒：`rembg` 是外部可选工具，首次运行会下载模型；不要把它当作 pet-forge 内置依赖。
 
-### 第 2 步：PNG → SVG
+### 第 2 步：按来源建立可编辑 SVG
 
-引导用户跑 png2svg（`routes/svg/tools/png2svg/`）：
+已有分层稿先审计并补缺；基于参考由模型或人工重绘时，分别检查造型还原度与图层可控制性。选择 PNG 自动矢量化时，使用 png2svg（`routes/svg/tools/png2svg/`）：
 - 提醒环境陷阱（必须 py 3.13）
 - 说明核心矢量化引擎是 vtracer；pet-forge 只做透明像素清理、去背景兜底、量化、缩放和 preset 包装
 - 用 `--preset` 选择合适的预设（apple-precise / pixel-art / high-detail）
@@ -117,25 +119,27 @@ py -3.13 -m rembg i input.png input-clean.png
 - 明确提醒：PNG→SVG 只适合简单、低色数、边界干净的图形；照片、复杂插画、毛发、强渐变、纹理和噪点图会 path 爆炸或转坏，建议改走 APNG 或手工重画关键 SVG 结构
 - 把 AI 参考图当作 storyboard / 粗轮廓输入，不要把整图矢量化结果直接当交付母版；交付级 SVG 仍要整理图层、命名、锚点和可动画路径
 
-### 第 3 步：套 preset + hello-idle 模板
+### 第 3 步：建立可运行基线
 
-把 `routes/svg/templates/hello-idle.svg.html` 复制为 `<state>-v1.svg.html`：
+从零起步时，可把 `routes/svg/templates/hello-idle.svg.html` 复制为 `<state>-v1.svg.html`：
 - 把 `<g id="pet">` 里的占位圆 + 眼睛**替换**成 PNG→SVG 出来的角色
 - 调 CSS 变量套 preset（apple-precise / pixel-art）
 - 浏览器双击打开看效果
 
-如果角色已有分层母版，优先从母版复制部件，不要从旧导出状态反向改回源文件。
+已有分层母版或已选动作时，从对应来源和控制器另存实验，保留角色设计、命名层与表情变体，不强制重套 preset。母版负责造型，已选动作可提供编排基线；不要从旧导出状态反向覆盖母版。
 多状态角色开工前先读 `routes/svg/conventions/layered-master.md`，把母版、library、状态导出页分清。
 
-### 第 4 步：磨制 idle 状态
+### 第 4 步：磨制当前姿态或动作
 
 按 `routes/svg/conventions/iteration.md` 流程：
-- v1 起手 → 浏览器连续播放多个周期 → 评审
-- 跑偏归档 _archive，开 v2
+- 先区分造型、可保持的手动姿态、动态跟随与表演编排；手动姿态先停住和拖动检查，循环动作再连续播放评审
+- 保留已评审基线，修复也可另存版本；归档前核对重建脚本依赖
 - OK 就锁定，备份 + 写 spec
 - 涉及肢体、脸部边缘、尾巴、手脚等变形时，先读 `routes/svg/conventions/rig-first.md`
+- 多个控制器合体时，按 `routes/svg/conventions/motion-composition.md` 确定属性归属、依赖顺序与共同动作时钟
 - 用 tuner 调出的状态，锁定后按 `routes/svg/conventions/tuner-to-canonical.md` 烘焙到 canonical / showcase
-- 交付前按 `routes/svg/conventions/validation-runbook.md` 做结构、脚本、嵌入、循环和目标端验证
+- 交付前按 `routes/svg/conventions/validation-runbook.md` 对照用户要求逐动作检查，并区分固定时钟重放、实时交互和目标端证据
+- 需要 GIF / APNG / WebP 时，按 `routes/svg/conventions/animation-export.md` 验证编码后的成品
 
 ### 第 5 步：扩展状态
 
@@ -230,6 +234,10 @@ py -3.13 -m rembg i input.png input-clean.png
 | "转头 / 抬头 / 低头 / 眼睛跟随 / 脸部动画 / 视线方向" | routes/svg/conventions/head-motion-axis.md |
 | "调参页怎么变成交付文件" | routes/svg/conventions/tuner-to-canonical.md |
 | "SVG 状态怎么验收" | routes/svg/conventions/validation-runbook.md |
+| "多个控制器怎么合体 / 动作互相覆盖 / 暂停和复位不同步" | routes/svg/conventions/motion-composition.md |
+| "SVG 动画导出 GIF / APNG / WebP / 透明成品检查" | routes/svg/conventions/animation-export.md |
+| "动作遗漏 / 看不到互动 / 验证结果对应哪个版本" | routes/svg/templates/action-acceptance.md + routes/svg/templates/validation-record.md |
+| "分层角色实战 / 共边露色 / 局部透明帧 / 互动展示经验" | examples/svg-case-study-notes.md |
 | "preset 是什么 / 怎么用" | routes/svg/presets/<preset>.md |
 | "PNG 怎么转 SVG" | routes/svg/tools/png2svg/README.md |
 | "从角色想法生图 / 已有图或 API 怎么接入 / 怎么选母图与关键帧" | shared/image-generation.md |
@@ -252,7 +260,7 @@ py -3.13 -m rembg i input.png input-clean.png
 
 1. **先验证工作流再扩展**：范围开放时可先磨一个 hero 状态；用户已明确要求批量时按该范围执行
 2. **改前先备份**：cp 一份 -backup-YYYY-MM-DD
-3. **跑偏方向归档不删**：_archive/ 留追溯
+3. **保留方向与来源记录**：标明未选版本；搬移归档时同步维护重建引用
 4. **连续播放多个周期**：静帧好看不等于循环好看
 5. **角色一致性是工程问题**：library/ 资产 (SVG) / CHARACTER_PREFIX (APNG) 钉死锚点
 6. **对外交付先核真实目标**：看 runtime / showcase / public asset 后再判断 bug、遗漏或新增 scope
@@ -264,7 +272,7 @@ py -3.13 -m rembg i input.png input-clean.png
 
 - ❌ **不要在未获授权时消耗外部生成额度**：用户对具体批次的生成要求就是该批次的授权；不要重复确认，也不要静默扩大批次
 - ❌ **不要发明固定数量限制**：图片方案数、生成尝试数、状态数和速度档位由用户目标、成本与实际结果决定
-- ❌ **不要凭空写整只角色的 SVG path**：AI 生图 / 手绘 / png2svg 可以起稿，但交付级 SVG 要回到分层母版、可读路径和稳定锚点
+- ❌ **不要把未经比对的 SVG 重绘当成保真母版**：基于参考的模型 / 人工重绘、自动描图和已有分层稿都可进入流程；分别检查角色识别特征、可读路径和稳定锚点
 - ❌ **不要替用户决定审美**：preset 给档位，最终视觉用户拍板
 - ❌ **不要保证"一键生成完整多状态角色"**：先验证共享资产和流程；用户已指定批量范围时，仍应按该范围完成。
 - ❌ **不要把任何现有产品角色资产直接复制给用户**：除非对应资产明确允许复用。
@@ -277,7 +285,7 @@ skill 跑通后，记录用户的实际工作流偏差：
 
 - 如果多个用户卡在某一步，说明文档不够 → 改对应 routes/ / shared/
 - 如果某个 preset 反复被改，说明默认值偏 → 调 preset 默认参数
-- 如果用户绕过 hello-idle 直接写状态，说明模板不够吸引 → 改 hello-idle 增加体验
+- 如果用户从已有分层稿或已选动作继续 → 保留这条入口；确有重复搭建负担时再改模板
 
 skill 不是写完就完，是个**慢慢迭代的产品**。
 
@@ -289,6 +297,7 @@ skill 不是写完就完，是个**慢慢迭代的产品**。
 - v0.2（2026-06-17）：补 SVG 分层母版、rig-first、tuner→canonical、验证 runbook、scripted SVG 嵌入、mini host 分工、APNG 绿幕/边缘质量经验
 - v0.3（2026-09-15）：补 Codex 生图、关键帧库、分段组装、速度选择、任意色键边界、跨片调色、APNG+SVG 混合合成和素材生命周期
 - v0.4（2026-09-28）：补从生图到已选图片的统一入口、匿名化多状态制作复盘、主体尺度与运行时播放映射的验收判据
+- v0.5（2026-10-29）：补已有 SVG 接管、共享边界与姿态联动、多模块合体、逐动作验收和动画导出，附匿名案例与记录模板
 - 下一步：用不同拓扑角色继续验证通用性
 
 当前进度详见 `CLAUDE.md` §Current Status。

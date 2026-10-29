@@ -1,33 +1,100 @@
-# SVG Case Study Notes
+# SVG 制作案例：从分层素材到互动角色
 
-This file intentionally contains only public-safe notes. It does not point to private local repositories or include character assets.
+以下从多轮制作中提炼方法，省略角色资产、私人对话和本地路径。案例中的选型有各自代价，不是每个角色都必须采用的算法。
 
-## What To Learn From The SVG Case Study
+## 先保住身份，再决定怎样动
 
-- Start with one strong idle/hero state before planning a full state set.
-- Keep SVG states self-contained so they can be loaded directly by a desktop-pet runtime.
-- Use shared visual tokens: palette, stroke style, eye shapes, and motion timing.
-- Archive rejected directions instead of deleting them; they explain why the final direction works.
-- Treat product character shapes as separate assets, not as part of this toolkit.
+一个毛发角色先经历了栅格概念图、简化稿和模型重绘的分层 SVG。过度减少色块、毛尖和眼睛细节后，虽然更容易画，却失去了原本的神态；用户最终选择较丰富的造型。
 
-## Apple-Precise Takeaways
+这个过程说明：
 
-- Rounded organic silhouettes work well.
-- Subtle motion reads better than full deformation: try 70-90% morph/scale before 100%.
-- Three-layer stroke systems help pale characters remain grounded on light backgrounds.
-- Long-idle surprises need a quiet gap before the next trigger.
-- Static-frame approval is not enough; watch multiple complete cycles, including the longest secondary motion.
+- “SVG 风格 PNG”、自动追踪 SVG 和按参考重绘的语义 SVG 是不同产物；后两者也不能只凭扩展名判断可动画性。
+- 已有分层母版时，检查路径、命名组、替代表情、裁切和轴心后直接接入，不必再走 PNG 转 SVG。
+- 身份由比例和结构共同决定。配饰的“松垮感”可能来自连接点、下垂和弯折，单纯旋转下摆不足以表达。
+- 保留原始素材和选中版本；实验、锁定资产与发布件分别记录来源，避免从旧导出页反向拼母版。
 
-## What Not To Copy
+见 [source-to-animation-master.md](../routes/svg/conventions/source-to-animation-master.md) 与 [layered-master.md](../routes/svg/conventions/layered-master.md)。
 
-- Do not copy a finished character path, exact eye design, palette, or named product identity.
-- Do not assume private examples are available to public users.
-- Use the methodology to make a new character with its own visual DNA.
+## 修接缝，不顺手改变已选动作
 
-## Relevant pet-forge Files
+抖耳时露缝，第一版通过固定耳根、减弱形变消除了空隙，却失去了用户认可的灵动感。后续恢复原转轴和节奏，用隐藏底形承接运动中露出的区域。
 
-- `routes/svg/presets/apple-precise.md`
-- `routes/svg/templates/hello-idle.svg.html`
-- `routes/svg/conventions/iteration.md`
-- `routes/svg/conventions/loop-states.md`
-- `routes/svg/lessons/pitfalls.md`
+另一轮“耳根有缝”实际指的是浅色内耳从额头边缘露出来，透明孔洞检查发现不了。应先在同一姿态标出问题位置，再判断是缺底图、遮挡错误还是共享边界错位。
+
+耳外毛也不能一律刚性跟耳旋转：一端贴头、一端连耳的毛片，需要固定附着边，让自由毛尖展收。检查极限动作时，根部连接与毛尖表现要同时成立。
+
+更隐蔽的一次问题来自浅色毛和粉色底层共用轮廓，却只让浅色层变形。结果没有透明洞，仍出现有颜色的裂缝；两层使用同一边界映射后才接上。
+
+见 [rig-first.md](../routes/svg/conventions/rig-first.md)。补面能解决连接，但补得太大也会形成凸包，不能用“没有露底”替代轮廓检查。
+
+## 手动姿态自然，不等于表演编排自然
+
+用户要改善拖滑杆时的细节，制作方却加入眼睛先动、头稍后跟上的动作。这段表演更生动，但停在中间角度时仍是原来的僵硬形状。
+
+真正的问题是脸毛只受惯性驱动：拖动时有变化，停住后惯性归零，毛也恢复中性轮廓。修订把它拆成随角度保持的姿态项和会衰减的余动项；慢拖、快拖、反向到同一角度，最终应收敛到同样姿态。
+
+眼嘴也先做连续停姿：眼皮遮住眼球，保住瞳孔和高光；嘴唇收拢，舌头保形并逐渐被遮住。把整组纵向压扁再切换闭合图，容易在半开与将闭状态暴露问题。
+
+眉毛、眼窝、脸颊和下巴加入后，还要交换调参顺序，检查相同输入是否得到相同结果。静态姿态、动态跟随与表演节奏分别解决，不能互相代替。
+
+## 尾巴：草模与毛层是两次验收
+
+落地尾形最初像被拉薄的刷子；继续调“更软、更厚”没有修好方向。先重画并选择落地静态端点，才有可用的动作目标。
+
+两个正确端点仍不保证中途正确：
+
+- 直接混合轮廓会把不同数量、位置的毛束平均，尖角逐渐变圆。
+- 固定裁片各自移动能保住每块形状，但整体可能忽胖忽瘦；它不自动构成前一节带动后一节的骨链。
+- 简化连杆先验证固定节长、父子连接、尾根发力、尾尖跟随和地面接触。草模通过后，再单独验收毛层的厚度、毛尖和颜色边界。
+
+一轮制作最终选择局部透明关键帧：保留已选首尾，补中间姿态，只替换尾巴，头部和表情继续用 SVG。帧数和停留时间由实际观感选择；被接受的简洁方案不需要为追求技术复杂度继续补帧。
+
+另一轮为增加连续摇尾和触地反应，尝试弹性骨链加两套分别绑定的矢量稿。两稿毛尖几何不做逐点平均，但交接仍包括退场稿套形、裁边、保持底层不透明、上层受控 alpha 合成；不能把它描述成完全不混合、不变形。
+
+这条路线新增了换稿跳动、毛色分布不一致和边缘污染问题。需要检查换稿前后、深浅底、慢放和快速反向，并处理套形、色区延展和裁切；维护成本高于单稿骨链，也可能改变已选端点的配色。
+
+因此双稿方案是有适用条件的案例，不是默认尾巴算法。先比较动作需求、轮廓差异和修订成本，再选择单稿、局部帧序列、补画中间稿或多稿合成。
+
+## 大角度转头的失败边界
+
+把整张正脸套进同一变形公式，只改变五官宽窄，容易表现成脸被挤动。改用生成图作结构参考，分别建立头壳、近远眼、口鼻、耳根和遮挡关系后，小角度转脸才更可信；生成图本身仍可能改变身份。
+
+大角度候选曾通过端点和离线循环检查，但中途远眼压成细线、额头出现浅色竖纹，近眼和口鼻仍缺少侧面结构。最终收窄了互动转头范围，保留失败稿供追溯；若需要完全侧面，须补相应造型与中间结构。
+
+可用范围由当前素材和验证决定，不能把某个角度写成所有角色的上限。也不要把“端点看起来像侧脸”升级为“整段转身已经完成”。见 [head-motion-axis.md](../routes/svg/conventions/head-motion-axis.md)。
+
+## 组合会暴露单部位测试看不到的问题
+
+转脸加入歪头、眨眼和毛发跟随后，出现过头部显大、眼皮与眼睛错位、颈部补片拉开。修正需核对共同坐标、映射顺序和谁负责最终写入，而非继续给每个部件加独立补偿。
+
+保持身体、画幅和接触基线一致做对照；对头部尺度的校准要包括五官、耳朵和连接面。旋转本身会改变屏幕包围盒，不必为了锁定包围盒而扭曲角色。
+
+暂停、继续、变速、重置和手动覆盖也属于组合行为。一个主时钟驱动各模块，才能避免头停了而毛还在动，或恢复后弹簧突然跳步。
+
+配饰曾同时被身体模块和自身弹簧驱动，合体后摆幅被重复放大；必须明确挂点由谁移动、下摆由谁变形。见 [motion-composition.md](../routes/svg/conventions/motion-composition.md)。
+
+## 能调用、能触发、能看见是不同结果
+
+完整动效导出曾漏掉嘴巴开合；另一版虽然有眨眼，闭合太短，正常速度看不清。需要把本次要展示的动作映射到时间区间，再重新解码成品核对画面；接口存在和循环通过都不能证明动作覆盖。
+
+互动页还出现过“有歪头逻辑，但试玩时很难遇到”的问题。把它接到明确的停留输入和合适的待机入口，再检查触发机会、可见持续时间、其他动作是否抢占及结束后的回归，比只调高随机权重更可验证。
+
+文字驱动的嘴型只能证明嘴随文字变化，不能称为语音口型同步。脚本模拟的点击和触摸也不能替代真实设备试玩。导出方法见 [animation-export.md](../routes/svg/conventions/animation-export.md)。
+
+## 实时布局和交付状态也要验证
+
+从调参台改为互动页，气泡、提示、指针命中和展开的尾巴都进入实际使用范围。检查窄窗口、触摸输入、动作极限和气泡出现时的画面，不能只看单个居中角色。
+
+一次身体看似消失或闪动，实际是舞台上方的实时读数随字数变化而换行，面板忽高忽矮，把角色推出窗口。固定时钟录制未暴露问题；稳定读数布局并把控制面板移出舞台上方后，再用真实时钟检查完整页面的位置。只裁取角色区域可能隐藏这类布局故障。
+
+记录结果时分开写：结构检查、固定时钟回放、浏览器实播、用户视觉选择、目标宿主与发布验证。某候选后来被替换时保留历史，同时更新当前入口，避免旧检查报告继续被当成最终批准。
+
+## 仍然适用的基础做法
+
+- 范围开放时，可先磨一个能验证路线的状态；用户已要求完整范围时按该范围推进。
+- 调色板、描边、眼形等共享视觉规则有助于跨状态一致；实际幅度和节奏按角色调整，不套固定百分比。
+- 圆润轮廓和多层描边是某些风格的选择。浅色角色需要背景对比，但已有无描边设计不应被自动加描边。
+- 长待机惊喜后留出恢复空间，连续查看最长的附属动作；可交付状态按运行时要求自包含。
+- 归档未选方向，保留选择原因；复用方法，不复制产品角色路径、独特眼形或身份设定。
+
+相关入口：[iteration.md](../routes/svg/conventions/iteration.md)、[validation-runbook.md](../routes/svg/conventions/validation-runbook.md)、[apple-precise.md](../routes/svg/presets/apple-precise.md)。
