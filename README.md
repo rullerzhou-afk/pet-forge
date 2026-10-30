@@ -30,7 +30,11 @@ pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用
 
 需要自然人物动作，同时还要准确文字、符号、粒子或发光时，可以使用混合路线：APNG 承载自然运动，SVG 承载逐帧跟随的精确效果。
 
+已有分层 SVG 可直接从[母版审计](routes/svg/conventions/source-to-animation-master.md)进入动画制作，保留造型和现有控制器；不需要重新转成 PNG 或套视觉 preset。
+
 已经在做多状态角色时，可参考[匿名化制作复盘](examples/apng-runtime-notes.md)：它集中说明角色尺度、付费生成输入、真实循环接缝、透明边缘、调色基准和定稿验收中容易误判的地方。
+
+分层角色可参考 [SVG 实战复盘](examples/svg-case-study-notes.md)，按需阅读[多模块合体](routes/svg/conventions/motion-composition.md)、[动画导出](routes/svg/conventions/animation-export.md)与[验收流程](routes/svg/conventions/validation-runbook.md)。后者附逐动作验收模板。
 
 ## 作为 Codex Skill 使用
 
@@ -44,7 +48,7 @@ pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用
 
 ```mermaid
 flowchart TD
-  A["概念图 / 透明 PNG / 初始 SVG"] --> B["询问角色拓扑"]
+  A["概念图 / 透明 PNG / 初始 SVG"] --> B["盘点已有角色拓扑，补问缺失信息"]
   B --> C["主体形态：只有头、头+身体、软团/物件，还是其他轮廓？"]
   B --> D["脸部：眼睛、嘴巴、腮红、表情符号？"]
   B --> E["附属结构：手、脚、耳朵、尾巴、触角、道具？"]

@@ -10,7 +10,7 @@ pet-forge is a toolkit for building custom desktop pets. It provides two base ou
 
 Output: self-contained `.svg.html` files.
 
-- Local vector workflow: reference image -> background removal -> PNG to SVG -> preset/template -> CSS/JS animation.
+- Vector intake: audit an existing layered SVG, redraw from a reference, or trace a suitable transparent PNG; preserve the selected design before adding controllers and animation.
 - Best for precise loops, low file size, and hand-tuned animation.
 - Main folders: `routes/svg/presets`, `routes/svg/templates`, `routes/svg/conventions`, `routes/svg/tools/png2svg`.
 
@@ -29,6 +29,7 @@ Output: APNG character motion with synchronized SVG overlays.
 
 - Best for natural generated motion plus precise text, symbols, particles, glow, or tracked effects.
 - Keep the generated prop surface blank when exact content will be added later, then drive the SVG layer from the same frame clock and measured anchors.
+- An SVG character can also carry one part as a local transparent frame sequence as a stopgap; see `routes/svg/conventions/motion-composition.md` for its limits.
 
 ## Public-Repo Rules
 
@@ -59,7 +60,7 @@ The toolkit does:
 
 - `README.md`: public user entry.
 - `SKILL.md`: skill trigger and workflow guidance.
-- `routes/svg/`: SVG presets, template, conventions, lessons, and `png2svg`.
+- `routes/svg/`: SVG presets, templates, conventions, lessons, and `png2svg`; includes controller composition, animation export, review-page rules and an action acceptance template.
 - `routes/apng/`: prompt template, APNG workflow docs, segment assembly, chroma/edge rules, hybrid overlays, lessons, and tools.
 - `shared/`: route-independent image generation and selection intake, state map, asset lifecycle, and lessons.
 - `examples/`: public-safe case-study notes.

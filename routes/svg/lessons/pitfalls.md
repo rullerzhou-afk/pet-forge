@@ -322,6 +322,6 @@ idle 类状态的 default：**4-8s 缓周期 + 5-10% 微妙幅度 + 眼睛主导
 2. **暂停看静帧**：`animation-play-state: paused`，每帧截图
 3. **关闭其他动画**：只跑你在调的那个，不要被其他动画干扰
 4. **查 transform-origin**：位置漂移经常来自错误的 origin
-5. **看循环衔接**：首尾帧应该完全相同（位置/缩放/旋转）
+5. **看循环衔接**：keyframes 的 0% 和 100% 应该完全相同（位置/缩放/旋转，整圈旋转除外）；循环导出不应重复首帧，见 `routes/svg/conventions/animation-export.md`
 6. **dpi/缩放测试**：浏览器 zoom 50% / 100% / 200% 都看一遍
 7. **换入口验证**：直开、预览壳、runtime/showcase 至少覆盖一个与交付等价的入口
