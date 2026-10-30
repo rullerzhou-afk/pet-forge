@@ -14,6 +14,12 @@ pet-forge 可以作为独立工具包使用，也可以作为 Codex skill 使用
    -> PNG 转 SVG                        -> 首尾帧锚定的 AI 视频
    -> preset + SVG 模板                 -> 纯色色键抠图
    -> 自包含 .svg.html                  -> .apng + 可选 SVG 精确效果层
+
+已有分层 SVG（SVG 路线的另一个入口）
+   -> 母版审计：造型、命名层、表情、控制器
+   -> 只补缺失的结构与锚点
+   -> 逐个动作制作，再合体
+   -> 自包含 .svg.html
 ```
 
 | 主题 | SVG 路线 | APNG 路线 |
@@ -124,7 +130,7 @@ py -3.13 routes\svg\tools\png2svg\png2svg.py examples\svg-gpt-pear\source.png ex
 
 ## 快速开始
 
-### SVG 路线
+### SVG 路线：从 PNG 开始
 
 ```powershell
 git clone <pet-forge-repo>
@@ -144,6 +150,15 @@ py -3.13 routes\svg\tools\png2svg\png2svg.py your-character-clean.png character.
 然后把生成的 SVG path 复制进 `routes/svg/templates/hello-idle.svg.html`，再调 CSS 变量和 preset。
 
 PNG 转 SVG 这一步使用 vtracer 作为矢量化引擎。它最适合简单、低色数、边界干净的图形；复杂照片、渐变、毛发、纹理和噪点边缘可能生成巨大或很差的 SVG。源图复杂时，优先走 APNG 路线，或手工重画关键 SVG 结构。
+
+### SVG 路线：已有分层 SVG
+
+手里已经有分层 SVG（例如设计师交付的分层稿）时，不需要转 PNG，也不必套 preset：
+
+1. 按[母版审计](routes/svg/conventions/source-to-animation-master.md)核对造型、命名分组、隐藏表情、clip / mask 引用和已有控制器；
+2. 只补缺失的部分，例如遮挡底形、语义分组和锚点；
+3. 从母版另存实验，按[磨制流程](routes/svg/conventions/iteration.md)一个动作一个动作做；多个动作合到同一个角色时，看[多模块合体](routes/svg/conventions/motion-composition.md)；
+4. 交付前按[验收流程](routes/svg/conventions/validation-runbook.md)检查；需要 GIF / APNG 时，看[动画导出](routes/svg/conventions/animation-export.md)。
 
 ### APNG 路线
 
