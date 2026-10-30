@@ -25,11 +25,11 @@ Output: `.apng` frame animations.
 
 ### Hybrid Route
 
-Output: APNG character motion with synchronized SVG overlays, or an SVG character with a local transparent frame sequence.
+Output: APNG character motion with synchronized SVG overlays.
 
 - Best for natural generated motion plus precise text, symbols, particles, glow, or tracked effects.
 - Keep the generated prop surface blank when exact content will be added later, then drive the SVG layer from the same frame clock and measured anchors.
-- For a local frame sequence, keep attachment, occlusion and timing consistent with the surrounding SVG; see `examples/svg-case-study-notes.md`.
+- An SVG character can also carry one part as a local transparent frame sequence as a stopgap; see `routes/svg/conventions/motion-composition.md` for its limits.
 
 ## Public-Repo Rules
 
@@ -60,7 +60,7 @@ The toolkit does:
 
 - `README.md`: public user entry.
 - `SKILL.md`: skill trigger and workflow guidance.
-- `routes/svg/`: SVG presets, templates, conventions, lessons, and `png2svg`; includes controller composition, animation export and action/version evidence templates.
+- `routes/svg/`: SVG presets, templates, conventions, lessons, and `png2svg`; includes controller composition, animation export, review-page rules and an action acceptance template.
 - `routes/apng/`: prompt template, APNG workflow docs, segment assembly, chroma/edge rules, hybrid overlays, lessons, and tools.
 - `shared/`: route-independent image generation and selection intake, state map, asset lifecycle, and lessons.
 - `examples/`: public-safe case-study notes.

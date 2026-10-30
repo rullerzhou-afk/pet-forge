@@ -6,9 +6,9 @@
 
 ## 范式定义
 
-每个状态文件长这样：
-
 这里约束的是交付文件。开发期可以分开维护母版、控制器、行为数据和构建脚本，再生成自包含页面；源文件改动后重新生成并检查实际输出，不直接修导出副本掩盖来源差异。
+
+每个状态文件长这样：
 
 ```html
 <!DOCTYPE html>
@@ -65,11 +65,11 @@
 ```
 idle-eye-follow-v1.svg.html       ← idle 状态、眼睛跟随方向、第 1 版
 idle-breathing-v1.svg.html        ← idle 状态、呼吸方向、第 1 版（不同方向，平起平坐）
-idle-eye-follow-v2.svg.html       ← v1 之后的修订或方向迭代
+idle-eye-follow-v2.svg.html       ← 同一方向，给用户看的第 2 版
 typing-stroke-symbols-v4.svg.html ← typing 状态、描边代码符号方向、第 4 版
 ```
 
-版本号用于区分可比较、可恢复的候选。修复也可以另存 v2；未评审的小修可继续改当前实验，但不覆盖用户看过的基线。名称和目录可按项目习惯选，具体原则见 [iteration.md](iteration.md)。
+方向写在名字里，换方向就换名字；版本号记同一方向里给用户看过的轮次。规则见 [iteration.md](iteration.md)。
 
 ### 锁定/归档
 
@@ -79,9 +79,7 @@ _archive/<state>-跑偏方向.svg.html                ← 已废弃但保留追�
 _locked-backups/<state>-vN-backup-2026-MM-DD.svg.html  ← 锁定前的版本备份
 ```
 
-未选方向保留原因与来源记录，可归档或原位标记；搬移前核对构建依赖。理由：
-- 后续磨制可能想"绕回去看看那条路是不是真的死胡同"
-- 跑偏的具体原因是元教训源头，删了就丢了
+未选方向不删除，见 [iteration.md](iteration.md) 的“未选方向不删除”。
 
 ---
 
